@@ -10,17 +10,19 @@
 PLAYERWIDTH    = $08
 PLAYERHEIGHT   = $08
 PLAYERSPEED    = $01
-SPRITEHEADBASE = $00 ; start of head sprites
-SPRITEHATBASE  = $04 ; start of hat brim sprites
-PLAYERSPRITE1  = $0200
-PLAYERSPRITE2  = $0204
+TURNSPEED      = $10
+SPRITECARBASE  = $08 ; start of car sprites
+CARSPRITE      = $0200
 
   .rsset $0000
 buttons   .rs 1
 
-playerx   .rs 1
-playery   .rs 1
-playerdir .rs 1
+playerx        .rs 1
+playery        .rs 1
+rotationindex  .rs 1
+playerrotation .rs 1
+playerrottimer .rs 1
+tempmovement   .rs 1 ; used for 
 
 RESET:
   SEI          ; disable IRQs
@@ -72,7 +74,7 @@ LoadSpritesLoop:
   lda sprites,x
   sta  $0200,x
   inx
-  cpx #$08
+  cpx #$04
   bne LoadSpritesLoop
 
   jsr enablenmi
@@ -81,8 +83,7 @@ LoadSpritesLoop:
   lda #$80
   sta playerx
   sta playery
-  lda #$00
-  sta playerdir
+  jsr updaterotationfromindex
 
 loopsies:
   ; just waiting for nmi
@@ -101,115 +102,175 @@ NMI:
   jsr readcontroller
 
   ; game logic
+  jsr rotateplayer
   jsr moveplayer
 
   ; end of nmi
   jsr enablenmi
 
-  RTI        ; return from interrupt
+  RTI ; return from interrupt
 
-moveplayer:
-  ldx playerdir ; grab our current direction in case we don't need to change
-  lda buttons
-  and #%00001000 ; up
-  beq mplcheckdown
-  ; up is pressed
-  lda playery
-  sec
-  sbc #PLAYERSPEED
-  sta playery
-  ldx #$01 ; direction up
-mplcheckdown:
-  lda buttons
-  and #%00000100 ; down
-  beq mplcheckleft
-  ; down is pressed
-  lda playery
-  clc
-  adc #PLAYERSPEED
-  sta playery
-  ldx #$03 ; direction down
-mplcheckleft:
-  lda buttons
-  and #%00000010 ; left
-  beq mplcheckright
-  ; left is pressed
-  lda playerx
-  sec
-  sbc #PLAYERSPEED
-  sta playerx
-  ldx #$02 ; direction left
-mplcheckright:
+rotateplayer:
   lda buttons
   and #%00000001
-  beq mplaftermove
-  ; right is pressed
-  lda playerx
+  beq plleftturn
+  ; right is down
+  lda playerrottimer
   clc
-  adc #PLAYERSPEED 
-  sta playerx
-  ldx #$00 ; direction right
-mplaftermove:
-  ; set our direction which we set into the x register
-  stx playerdir
+  adc #TURNSPEED
+  sta playerrottimer
+  bcc plleftturn
+  ; rotation thing rolled over
+  jsr plrotateright ; deal with it in this subroutine or whatever it's called
+plleftturn:
+  lda buttons
+  and #%00000010
+  beq plturnend
+  ; left is down
+  lda playerrottimer
+  sec
+  sbc #TURNSPEED
+  sta playerrottimer
+  bcs plturnend
+  ; rotation thing rolled over
+  jsr plrotateleft
+plturnend:
+  rts
+
+; left/right rotations are separate because I expected them to be big and used elsewhere
+; i.e. collision/bouncing
+plrotateright:
+  lda rotationindex
+  clc
+  adc #$01
+  cmp #$08
+  bcc rrindexfinished
+  ; index is >= $08
+  lda #$00 ; so we loop
+rrindexfinished:
+  sta rotationindex
+  jsr updaterotationfromindex
+  rts
+
+plrotateleft:
+  lda rotationindex
+  sec
+  sbc #$01
+  bcs rlindexfinished
+  ; underflowed to $ff
+  lda #$07 ; go back to highest index
+rlindexfinished:
+  sta rotationindex
+  jsr updaterotationfromindex
+  rts
+
+; grabs the direction number from the 'directions' data below
+updaterotationfromindex:
+  ldx rotationindex
+  lda directions,x
+  sta playerrotation
+  rts
+
+moveplayer:
+  ; idea here is to adjust x/y to show which directions we need to move
+  ; 0 = negative movement, 1 = no movement, 2 = positive movement
+  ; this is awful i should figure out how negatives work if they even do natively
+  ldx #$01 ; net x movement
+  ldy #$01 ; net y movement
+  lda buttons
+  and #%00001100
+  beq mplend ; no movement buttons are held
+  lda playerrotation
+  and #%00001000 ; right
+  beq mplleftcheck
+  inx
+mplleftcheck:
+  lda playerrotation
+  and #%00000100 ; left
+  beq mplupcheck
+  dex
+mplupcheck:
+  lda playerrotation
+  and #%00000010 ; up
+  beq mpldowncheck
+  dey
+mpldowncheck:
+  lda playerrotation
+  and #%00000001 ; down
+  beq mplforwardcheck
+  iny
+mplforwardcheck:
+  lda buttons
+  and #%00001000 ; forward
+  beq mplbackwardcheck
+  ; honestly this is all awful and not worth commenting I just wanted the driving to work
+  cpx #$00
+  bne mplforward2
+  dec playerx
+mplforward2:
+  cpx #$02
+  bne mplforward3
+  inc playerx
+mplforward3:
+  cpy #$00
+  bne mplforward4
+  dec playery
+mplforward4:
+  cpy #$02
+  bne mplbackwardcheck
+  inc playery
+mplbackwardcheck:
+  lda buttons
+  and #%00000100 ; backward
+  beq mplend
+  ; todo: implement backwards once I figure out how to do it well
+mplend:
   rts
 
 updateplayersprite:
   lda playery
-  sta PLAYERSPRITE1 ; set y pos
-  sta PLAYERSPRITE2 ; put hat brim at the same position until we change it later
+  sta CARSPRITE ; set y pos
   lda playerx
   ldx #$03 ; offset from sprite address for x position
-  sta PLAYERSPRITE1, x
-  sta PLAYERSPRITE2, x ; hat brim again
-
-  ; move hat brim based on direction
-  ldy playerx
-  lda playerdir
-  cmp #$00
-  beq upsbrimright
-  cmp #$02
-  beq upsbrimleft
-  ldy playery
-  cmp #$01
-  beq upsbrimtop
-  ; move brim down
-  tya
+  sta CARSPRITE, x
+  ; rotation things
+  ldx #$00 ; offset from first car sprite
+  lda playerrotation
+  and #%00001100 ; left or right
+  beq upssetsprite
+  inx
+  lda playerrotation
+  and #%00000011 ; up or down AND left or right so it will be diagonal
+  beq upssetsprite
+  inx
+upssetsprite:
+  txa
   clc
-  adc #PLAYERHEIGHT
-  sta PLAYERSPRITE2
-  jmp upsspritechange
-upsbrimtop:
-  ; move brim up
-  tya
-  sec
-  sbc #PLAYERHEIGHT
-  sta PLAYERSPRITE2
-  jmp upsspritechange
-upsbrimright:
-  ; move brim right
-  tya
-  clc
-  adc #PLAYERWIDTH
-  sta PLAYERSPRITE2, x
-  jmp upsspritechange
-upsbrimleft:
-  ; move brim left
-  tya
-  sec
-  sbc #PLAYERWIDTH
-  sta PLAYERSPRITE2, x
-  jmp upsspritechange
-upsspritechange:
-  ; sprites based on direction
-  lda #SPRITEHEADBASE
-  clc
-  adc playerdir
-  ldx #$01 ; offset from sprite address for tile number
-  sta PLAYERSPRITE1, x
-  clc
-  adc #$04 ; next sprite
-  sta PLAYERSPRITE2, x
+  adc #SPRITECARBASE
+  ldx #$01 ; offset from start of sprite
+  sta CARSPRITE,x
+  ; first reset the flippage
+  ldx #$02 ; offset for sprite attributes
+  lda CARSPRITE,x
+  and #%00111111 ; remove the last 2 bits (flips)
+  sta CARSPRITE,x
+  ; horizontal flip if facing right
+  lda playerrotation
+  and #%00001000
+  beq upsvertflip
+  ; are facing right
+  lda CARSPRITE,x
+  ora #%01000000
+  sta CARSPRITE,x
+upsvertflip:
+  lda playerrotation
+  and #%00000001
+  beq upsend
+  ; facing down
+  lda CARSPRITE,x
+  ora #%10000000
+  sta CARSPRITE,x
+upsend:
   rts
 
 readcontroller:
@@ -248,8 +309,14 @@ palette:
   .db $0c,$1C,$15,$14,  $22,$15,$06,$30,  $39,$1C,$15,$14,  $22,$02,$38,$3C   ; sprite palette
 
 sprites:
-  .db $10,$01,$01,$80 ; $0200
-  .db $09,$05,$01,$80 ; $0204
+  .db $10,SPRITECARBASE,$01,$80 ; $0200
+
+; direction bit layout
+; R L U D
+; 0 0 0 0
+directions:
+  ;    U   UR  R  RD   D  LD  L    LU
+  .db $02,$0a,$08,$09,$01,$05,$04,$06
 
   .org $FFFA
   .dw NMI ; label to jump to on nmi
@@ -260,4 +327,4 @@ sprites:
 ;;;;;;;;;;;;;;  
   .bank 2
   .org $0000
-  .incbin "sprites.chr"   
+  .incbin "sprites.chr"
