@@ -348,7 +348,7 @@ nametable:
   .db $fa,$fa,$f9,$f9,$fa,$fa,$fa,$fa,$fa,$f9,$fa,$fa,$f9,$fa,$fa,$fa
   .db $fa,$fa,$fa,$f9,$fa,$fa,$fa,$fa,$fa,$f9,$fa,$fa,$fa,$fa,$fa,$fa
 
-  .db $f9,$fa,$fa,$fa,$fa,$fa,$fa,$f8,$fb,$fb,$fb,$fb,$fb,$fb,$fb,$fb
+  .db $f9,$fa,$fa,$fa,$fa,$fa,$fa,$e7,$fb,$fb,$fb,$fb,$fb,$fb,$fb,$fb
   .db $fb,$fb,$fb,$fb,$fb,$fa,$fa,$f9,$fa,$fa,$fa,$fa,$fa,$fa,$f9,$fa
 
   .db $fa,$fa,$fa,$fa,$fa,$fa,$fa,$fc,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
