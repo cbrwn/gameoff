@@ -68,6 +68,34 @@ LoadPalettesLoop:
   CPX #$20            
   BNE LoadPalettesLoop  ;if x = $20, 32 bytes copied, all done
 
+loadbackground:
+  lda $2002
+  lda #$20
+  sta $2006
+  lda #$00;#$20
+  sta $2006
+  ldx #$00
+loadbackgroundloop
+  lda nametable,x
+  sta $2007
+  inx
+  cpx #$a0 ; 128
+  bne loadbackgroundloop
+
+loadattribute:
+  lda $2002
+  lda #$23
+  sta $2006
+  lda #$c0
+  sta $2006
+  ldx #$00
+loadattributeloop:
+  lda attribute,x
+  sta $2007
+  inx
+  cpx #$10
+  bne loadattributeloop
+
 LoadSprites:
   ldx #$00
 LoadSpritesLoop:
@@ -295,21 +323,47 @@ waitvblank:
   rts
 
 enablenmi:
-  lda #%10000000
+  lda #%10010000
   sta $2000
-  lda #%00010000
+  lda #%00011110
   sta $2001
+  ; no scrolling
+  lda #$00
+  sta $2005
+  sta $2005 
   rts
  
 ;;;;;;;;;;;;;;  
   .bank 1
   .org $E000
 palette:
-  .db $0f,$29,$1A,$0F,  $22,$36,$17,$0F,  $22,$30,$21,$0F,  $22,$27,$17,$0F   ; background palette
-  .db $0c,$1C,$15,$14,  $22,$15,$06,$30,  $39,$1C,$15,$14,  $22,$02,$38,$3C   ; sprite palette
+  .db $0f,$2D,$27,$30,  $15,$30,$1a,$09,  $22,$30,$21,$0F,  $22,$27,$17,$0F   ; background palette
+  .db $0c,$1C,$15,$14,  $22,$21,$15,$30,  $39,$1C,$15,$14,  $22,$02,$38,$3C   ; sprite palette
 
 sprites:
   .db $10,SPRITECARBASE,$01,$80 ; $0200
+
+; background stuff
+nametable:
+  .db $fa,$fa,$f9,$f9,$fa,$fa,$fa,$fa,$fa,$f9,$fa,$fa,$f9,$fa,$fa,$fa
+  .db $fa,$fa,$fa,$f9,$fa,$fa,$fa,$fa,$fa,$f9,$fa,$fa,$fa,$fa,$fa,$fa
+
+  .db $f9,$fa,$fa,$fa,$fa,$fa,$fa,$f8,$fb,$fb,$fb,$fb,$fb,$fb,$fb,$fb
+  .db $fb,$fb,$fb,$fb,$fb,$fa,$fa,$f9,$fa,$fa,$fa,$fa,$fa,$fa,$f9,$fa
+
+  .db $fa,$fa,$fa,$fa,$fa,$fa,$fa,$fc,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
+  .db $ff,$ff,$ff,$ff,$ff,$88,$88,$88,$88,$88,$88,$88,$88,$88,$88,$88
+
+  .db $fa,$fa,$fa,$fa,$fa,$fa,$fa,$fc,$ff,$ff,$fd,$fd,$fd,$fd,$fd,$fd
+  .db $fd,$fd,$fd,$fd,$fd,$88,$88,$88,$88,$88,$88,$88,$88,$88,$88,$88
+
+  .db $fa,$fa,$fa,$fa,$fa,$fa,$fa,$fc,$ff,$fe,$ff,$ff,$ff,$ff,$ff,$ff
+  .db $ff,$ff,$ff,$ff,$ff,$88,$88,$88,$88,$88,$88,$88,$88,$88,$88,$88
+
+attribute:
+  ; order of bits: BOTTOMLEFT | BOTTOMRIGHT | TOPRIGHT | TOPLEFT 
+  .db %01010101,%01010101,%00000101,%00000101,%00000101,%00000101,%00000101,%00000101
+  .db %00000101,%00000101,%00000000,%00000000,%00000000,%00000000,%00000000,%00000000
 
 ; direction bit layout
 ; R L U D
