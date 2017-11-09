@@ -130,6 +130,7 @@ NMI:
   jsr readcontroller
 
   ; game logic
+  jsr turncooldown
   jsr rotateplayer
   jsr moveplayer
 
@@ -138,30 +139,51 @@ NMI:
 
   RTI ; return from interrupt
 
+turncooldown:
+  ; if left/right isn't down then we can reset
+  lda buttons
+  and #%00000011
+  bne tcdbuttonheld
+  lda #$ff
+  jmp tcdupdatetimer
+tcdbuttonheld:
+  ; button is down, count down the cooldown
+  lda playerrottimer
+  cmp #$ff
+  beq tcdend
+  ; cooldown timer is < ff
+  clc
+  adc #TURNSPEED
+  bcc tcdupdatetimer
+  ; went over $ff
+  lda #$ff ; limit it to $ff
+tcdupdatetimer:
+  sta playerrottimer
+tcdend:
+  rts
+
 rotateplayer:
   lda buttons
   and #%00000001
   beq plleftturn
   ; right is down
   lda playerrottimer
-  clc
-  adc #TURNSPEED
-  sta playerrottimer
-  bcc plleftturn
-  ; rotation thing rolled over
+  cmp #$ff
+  bne plleftturn ; only want to turn if the 'cooldown' is up
   jsr plrotateright ; deal with it in this subroutine or whatever it's called
+  lda #$00
+  sta playerrottimer ; reset turn cooldown
 plleftturn:
   lda buttons
   and #%00000010
   beq plturnend
   ; left is down
   lda playerrottimer
-  sec
-  sbc #TURNSPEED
-  sta playerrottimer
-  bcs plturnend
-  ; rotation thing rolled over
+  cmp #$ff
+  bne plturnend ; only want to turn if the 'cooldown' is up
   jsr plrotateleft
+  lda #$00
+  sta playerrottimer ; reset turn cooldown
 plturnend:
   rts
 
