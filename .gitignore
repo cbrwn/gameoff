@@ -1,3 +1,4 @@
 # rom and other compile file
 *.nes
 *.fns
+NESASM3.exe
