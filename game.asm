@@ -74,15 +74,41 @@ loadbackground:
   lda $2002
   lda #$20
   sta $2006
-  lda #$00;#$20
+  lda #$00;#20
   sta $2006
+  ; load in 4 parts
+  ; first part:
   ldx #$00
-loadbackgroundloop
-  lda nametable,x
+loadbackgroundloop0
+  lda nametable0,x
   sta $2007
   inx
-  cpx #$a0 ; 128
-  bne loadbackgroundloop
+  cpx #$00
+  bne loadbackgroundloop0
+  ; second part:
+  ldx #$00
+loadbackgroundloop1
+  lda nametable1,x
+  sta $2007
+  inx
+  cpx #$00
+  bne loadbackgroundloop1
+  ; third part:
+  ldx #$00
+loadbackgroundloop2
+  lda nametable2,x
+  sta $2007
+  inx
+  cpx #$00
+  bne loadbackgroundloop2
+  ; last part:
+  ldx #$00
+loadbackgroundloop3
+  lda nametable3,x
+  sta $2007
+  inx
+  cpx #$C0
+  bne loadbackgroundloop3
 
 loadattribute:
   lda $2002
@@ -95,7 +121,7 @@ loadattributeloop:
   lda attribute,x
   sta $2007
   inx
-  cpx #$10
+  cpx #$40
   bne loadattributeloop
 
 LoadSprites:
@@ -422,32 +448,16 @@ enablenmi:
   .org $E000
 palette:
   .db $0f,$2D,$27,$30,  $15,$30,$1a,$09,  $22,$30,$21,$0F,  $22,$27,$17,$0F   ; background palette
-  .db $0c,$1C,$15,$14,  $22,$21,$15,$30,  $39,$1C,$15,$14,  $22,$02,$38,$3C   ; sprite palette
+  .db $15,$1C,$15,$14,  $22,$21,$15,$30,  $39,$1C,$15,$14,  $22,$02,$38,$3C   ; sprite palette
 
 sprites:
   .db $10,SPRITECARBASE,$01,$80 ; $0200
 
 ; background stuff
-nametable:
-  .db $fa,$fa,$f9,$f9,$fa,$fa,$fa,$fa,$fa,$f9,$fa,$fa,$f9,$fa,$fa,$fa
-  .db $fa,$fa,$fa,$f9,$fa,$fa,$fa,$fa,$fa,$f9,$fa,$fa,$fa,$fa,$fa,$fa
-
-  .db $f9,$fa,$fa,$fa,$fa,$fa,$fa,$e7,$fb,$fb,$fb,$fb,$fb,$fb,$fb,$fb
-  .db $fb,$fb,$fb,$fb,$fb,$fa,$fa,$f9,$fa,$fa,$fa,$fa,$fa,$fa,$f9,$fa
-
-  .db $fa,$fa,$fa,$fa,$fa,$fa,$fa,$fc,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff
-  .db $ff,$ff,$ff,$ff,$ff,$88,$88,$88,$88,$88,$88,$88,$88,$88,$88,$88
-
-  .db $fa,$fa,$fa,$fa,$fa,$fa,$fa,$fc,$ff,$ff,$fd,$fd,$fd,$fd,$fd,$fd
-  .db $fd,$fd,$fd,$fd,$fd,$88,$88,$88,$88,$88,$88,$88,$88,$88,$88,$88
-
-  .db $fa,$fa,$fa,$fa,$fa,$fa,$fa,$fc,$ff,$fe,$ff,$ff,$ff,$ff,$ff,$ff
-  .db $ff,$ff,$ff,$ff,$ff,$88,$88,$88,$88,$88,$88,$88,$88,$88,$88,$88
+  .include "map.asm"
 
 attribute:
-  ; order of bits: BOTTOMLEFT | BOTTOMRIGHT | TOPRIGHT | TOPLEFT 
-  .db %01010101,%01010101,%00000101,%00000101,%00000101,%00000101,%00000101,%00000101
-  .db %00000101,%00000101,%00000000,%00000000,%00000000,%00000000,%00000000,%00000000
+  .incbin "map.atr"
 
 ; direction bit layout
 ; R L U D
