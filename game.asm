@@ -22,7 +22,9 @@ playery        .rs 1
 rotationindex  .rs 1
 playerrotation .rs 1
 playerrottimer .rs 1
-tempmovement   .rs 1 ; used for 
+tempmovement   .rs 1 ; used for (I never finished this comment wtf)
+playeraccel    .rs 1 ; increases with up/down
+playervel      .rs 1 ; moves player when it overflows
 
 RESET:
   SEI          ; disable IRQs
@@ -132,6 +134,7 @@ NMI:
   ; game logic
   jsr turncooldown
   jsr rotateplayer
+  jsr playeraccelerate
   jsr moveplayer
 
   ; end of nmi
@@ -222,6 +225,90 @@ updaterotationfromindex:
   rts
 
 moveplayer:
+  jsr updatemovedirections
+  lda playervel
+  clc
+  adc playeraccel
+  sta playervel
+  bcc mplnomove
+  jsr moveplayerforward
+mplnomove:
+  rts
+
+playeraccelerate:
+  ;jsr updatemovedirections
+  lda buttons
+  and #%00001100
+  bne mplforwardcheck
+  ; no buttons down - decrease acceleration
+  lda playeraccel
+  beq mplend ; already 0
+  lda #$00
+  sta playeraccel
+  jmp mplend
+mplforwardcheck:
+  lda buttons
+  and #%00001000 ; forward
+  beq mplbackwardcheck
+  ; increase acceleration
+  ldx #$00
+mplaccelincreaseloop:
+  lda playeraccel
+  cmp #$ff
+  beq mplbackwardcheck
+  inc playeraccel
+  inx
+  cpx #$04 ; 4 times instead of just adding 4 cos it's easier to limit I think
+  bne mplaccelincreaseloop
+  ;jsr moveplayerforward
+mplbackwardcheck:
+  lda buttons
+  and #%00000100 ; backward
+  beq mplend
+  ;jsr moveplayerbackwards
+mplend:
+  rts
+
+moveplayerforward:
+  ; honestly this is all awful and not worth commenting I just wanted the driving to work
+  cpx #$00
+  bne mplforward2
+  dec playerx
+mplforward2:
+  cpx #$02
+  bne mplforward3
+  inc playerx
+mplforward3:
+  cpy #$00
+  bne mplforward4
+  dec playery
+mplforward4:
+  cpy #$02
+  bne mpfend
+  inc playery
+mpfend:
+  rts
+
+moveplayerbackwards:
+  cpx #$00
+  bne mplback2
+  inc playerx
+mplback2:
+  cpx #$02
+  bne mplback3
+  dec playerx
+mplback3:
+  cpy #$00
+  bne mplback4
+  inc playery
+mplback4:
+  cpy #$02
+  bne mplbackend
+  dec playery
+mplbackend:
+  rts
+
+updatemovedirections:
   ; idea here is to adjust x/y to show which directions we need to move
   ; 0 = negative movement, 1 = no movement, 2 = positive movement
   ; this is awful i should figure out how negatives work if they even do natively
@@ -247,34 +334,9 @@ mplupcheck:
 mpldowncheck:
   lda playerrotation
   and #%00000001 ; down
-  beq mplforwardcheck
+  beq umdfinish
   iny
-mplforwardcheck:
-  lda buttons
-  and #%00001000 ; forward
-  beq mplbackwardcheck
-  ; honestly this is all awful and not worth commenting I just wanted the driving to work
-  cpx #$00
-  bne mplforward2
-  dec playerx
-mplforward2:
-  cpx #$02
-  bne mplforward3
-  inc playerx
-mplforward3:
-  cpy #$00
-  bne mplforward4
-  dec playery
-mplforward4:
-  cpy #$02
-  bne mplbackwardcheck
-  inc playery
-mplbackwardcheck:
-  lda buttons
-  and #%00000100 ; backward
-  beq mplend
-  ; todo: implement backwards once I figure out how to do it well
-mplend:
+umdfinish:
   rts
 
 updateplayersprite:
