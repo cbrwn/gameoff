@@ -138,7 +138,10 @@ LoadSpritesLoop:
   ; initialize variables and stuff
   lda #$80
   sta playerx
+  lda #$ca
   sta playery
+  lda #$02
+  sta rotationindex
   jsr updaterotationfromindex
 
 loopsies:
@@ -188,7 +191,7 @@ accelerateplayer:
   and #%10000000
   beq aplnobutton
   lda playeraccel
-  cmp #$d0
+  cmp #$b0
   bcs aplend
   inc playeraccel
   inc playeraccel
@@ -198,7 +201,7 @@ aplnobutton:
   cmp #$00
   beq aplend
   sec
-  sbc #$03
+  sbc #$02
   sta playeraccel
   bcs aplend
   lda #$00
