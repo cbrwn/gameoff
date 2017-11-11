@@ -1,7 +1,7 @@
-  .inesprg 1   ; 1x 16KB PRG code
-  .ineschr 1   ; 1x  8KB CHR data
-  .inesmap 0   ; mapper 0 = NROM, no bank swapping
-  .inesmir 1   ; background mirroring
+  .inesprg 1
+  .ineschr 1
+  .inesmap 0
+  .inesmir 1
 
 ;;;;;;;;;;;;;;;
   .bank 0
@@ -160,13 +160,90 @@ NMI:
   ; game logic
   jsr turncooldown
   jsr rotateplayer
-  jsr playeraccelerate
-  jsr moveplayer
+  jsr accelerateplayer
+  ; driveplayer twice as an easy way to move faster
+  jsr driveplayer
+  jsr driveplayer
 
   ; end of nmi
   jsr enablenmi
 
   RTI ; return from interrupt
+
+driveplayer:
+  lda playervel
+  clc
+  adc playeraccel
+  sta playervel
+  bcc dplend
+  lda playervel
+  ; velocity carried over
+  jsr updatemovedirections
+  jsr moveplayerforward
+dplend:
+  rts
+
+accelerateplayer:
+  lda buttons
+  and #%10000000
+  beq aplnobutton
+  lda playeraccel
+  cmp #$d0
+  bcs aplend
+  inc playeraccel
+  inc playeraccel
+  jmp aplend
+aplnobutton:
+  lda playeraccel
+  cmp #$00
+  beq aplend
+  sec
+  sbc #$03
+  sta playeraccel
+  bcs aplend
+  lda #$00
+  sta playeraccel
+aplend:
+  rts
+
+moveplayerforward:
+  ; honestly this is all awful and not worth commenting I just wanted the driving to work
+  cpx #$00
+  bne mplforward2
+  dec playerx
+mplforward2:
+  cpx #$02
+  bne mplforward3
+  inc playerx
+mplforward3:
+  cpy #$00
+  bne mplforward4
+  dec playery
+mplforward4:
+  cpy #$02
+  bne mpfend
+  inc playery
+mpfend:
+  rts
+
+moveplayerbackwards:
+  cpx #$00
+  bne mplback2
+  inc playerx
+mplback2:
+  cpx #$02
+  bne mplback3
+  dec playerx
+mplback3:
+  cpy #$00
+  bne mplback4
+  inc playery
+mplback4:
+  cpy #$02
+  bne mplbackend
+  dec playery
+mplbackend:
+  rts
 
 turncooldown:
   ; if left/right isn't down then we can reset
@@ -250,99 +327,12 @@ updaterotationfromindex:
   sta playerrotation
   rts
 
-moveplayer:
-  jsr updatemovedirections
-  lda playervel
-  clc
-  adc playeraccel
-  sta playervel
-  bcc mplnomove
-  jsr moveplayerforward
-mplnomove:
-  rts
-
-playeraccelerate:
-  ;jsr updatemovedirections
-  lda buttons
-  and #%00001100
-  bne mplforwardcheck
-  ; no buttons down - decrease acceleration
-  lda playeraccel
-  beq mplend ; already 0
-  lda #$00
-  sta playeraccel
-  jmp mplend
-mplforwardcheck:
-  lda buttons
-  and #%00001000 ; forward
-  beq mplbackwardcheck
-  ; increase acceleration
-  ldx #$00
-mplaccelincreaseloop:
-  lda playeraccel
-  cmp #$ff
-  beq mplbackwardcheck
-  inc playeraccel
-  inx
-  cpx #$04 ; 4 times instead of just adding 4 cos it's easier to limit I think
-  bne mplaccelincreaseloop
-  ;jsr moveplayerforward
-mplbackwardcheck:
-  lda buttons
-  and #%00000100 ; backward
-  beq mplend
-  ;jsr moveplayerbackwards
-mplend:
-  rts
-
-moveplayerforward:
-  ; honestly this is all awful and not worth commenting I just wanted the driving to work
-  cpx #$00
-  bne mplforward2
-  dec playerx
-mplforward2:
-  cpx #$02
-  bne mplforward3
-  inc playerx
-mplforward3:
-  cpy #$00
-  bne mplforward4
-  dec playery
-mplforward4:
-  cpy #$02
-  bne mpfend
-  inc playery
-mpfend:
-  rts
-
-moveplayerbackwards:
-  cpx #$00
-  bne mplback2
-  inc playerx
-mplback2:
-  cpx #$02
-  bne mplback3
-  dec playerx
-mplback3:
-  cpy #$00
-  bne mplback4
-  inc playery
-mplback4:
-  cpy #$02
-  bne mplbackend
-  dec playery
-mplbackend:
-  rts
-
 updatemovedirections:
   ; idea here is to adjust x/y to show which directions we need to move
   ; 0 = negative movement, 1 = no movement, 2 = positive movement
   ; this is awful i should figure out how negatives work if they even do natively
   ldx #$01 ; net x movement
   ldy #$01 ; net y movement
-  lda buttons
-  and #%00001100
-  beq mplend ; no movement buttons are held
   lda playerrotation
   and #%00001000 ; right
   beq mplleftcheck
