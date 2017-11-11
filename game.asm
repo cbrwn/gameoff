@@ -25,6 +25,7 @@ playerrottimer .rs 1
 tempmovement   .rs 1 ; used for (I never finished this comment wtf)
 playeraccel    .rs 1 ; increases with up/down
 playervel      .rs 1 ; moves player when it overflows
+negativevel    .rs 1
 
 RESET:
   SEI          ; disable IRQs
@@ -165,6 +166,7 @@ NMI:
   jsr rotateplayer
   jsr accelerateplayer
   ; driveplayer twice as an easy way to move faster
+  jsr collideplayer
   jsr driveplayer
   jsr driveplayer
 
@@ -179,10 +181,14 @@ driveplayer:
   adc playeraccel
   sta playervel
   bcc dplend
-  lda playervel
   ; velocity carried over
   jsr updatemovedirections
+  lda negativevel
+  bne dplreverse
   jsr moveplayerforward
+  jmp dplend
+dplreverse
+  jsr moveplayerbackwards
 dplend:
   rts
 
@@ -190,6 +196,9 @@ accelerateplayer:
   lda buttons
   and #%10000000
   beq aplnobutton
+  ; when velocity is negative, act like no button is being held down
+  lda negativevel
+  bne aplnobutton
   lda playeraccel
   cmp #$b0
   bcs aplend
@@ -207,6 +216,16 @@ aplnobutton:
   lda #$00
   sta playeraccel
 aplend:
+  ; check if we're moving backwards
+  lda negativevel
+  beq aplafterreverse
+  ; we are moving backwards
+  ; if accel is 0 then make it seem like we start going forward
+  lda playeraccel
+  bne aplafterreverse
+  lda #$00
+  sta negativevel ; just by setting negative flag to 0
+aplafterreverse:
   rts
 
 moveplayerforward:
@@ -246,6 +265,53 @@ mplback4:
   bne mplbackend
   dec playery
 mplbackend:
+  rts
+
+collideplayer:
+  ; check left wall
+  lda playerx
+  cmp #$10
+  bcs clpchecktopwall
+  lda #$11
+  sta playerx
+  jsr playercollided
+  jmp clpend
+clpchecktopwall:
+  ; check top wall
+  lda playery
+  cmp #$10
+  bcs clpcheckrightwall
+  lda #$11
+  sta playery
+  jsr playercollided
+  cmp clpend
+clpcheckrightwall:
+  ; check right wall
+  lda playerx
+  cmp #$e8
+  bcc clpcheckbottomwall
+  lda #$e7
+  sta playerx
+  jsr playercollided
+  cmp clpend
+clpcheckbottomwall:
+  lda playery
+  cmp #$d8
+  bcc clpend
+  lda #$d7
+  sta playery
+  jsr playercollided
+clpend:
+  rts
+
+; call this when the car hits a wall or something
+playercollided:
+  lda negativevel
+  eor #$01 ; flip between 0 and 1
+  sta negativevel
+  ; reduce speed too 
+  clc ; make sure carry is clear before rotating
+  ror playeraccel ; / 2
   rts
 
 turncooldown:
