@@ -6,4 +6,4 @@ I'm aiming to make a little time-trial-ish racing game, mostly inspired by the R
 
 this project is my first time touching any kind of assembly and any console development so it's bound to be bad, messy and a lot of fun
 
-build.bat refers to [NESASM3](http://www.nespowerpak.com/nesasm/NESASM3.zip) to assemble it to a .nes
+build.bat refers to [NESASM3](http://www.nespowerpak.com/nesasm/NESASM3.zip) ([which is open source!](http://www.nespowerpak.com/nesasm/nesasmsrc.zip)) to assemble it to a .nes
