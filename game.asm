@@ -14,6 +14,8 @@ TURNSPEED      = $10
 SPRITECARBASE  = $08 ; start of car sprites
 CARSPRITE      = $0200
 
+WALLBOXCOUNT   = $07 ; number of boxes which act as walls
+
   .rsset $0000
 buttons   .rs 1
 
@@ -302,16 +304,82 @@ clpcheckbottomwall:
   sta playery
   jsr playercollided
 clpend:
+  jsr collidewalls
+  rts
+
+; ok so this doesn't work because it changes
+collidewalls
+  ldy #$00
+clwloop:
+  jsr roundxupwalls
+  ; check left side
+  lda playerx
+  clc
+  adc #PLAYERWIDTH
+  cmp walls,x
+  bcc clwloopend
+  ; check top side
+  inx
+  lda playery
+  clc
+  adc #PLAYERHEIGHT
+  cmp walls,x
+  bcc clwloopend
+  ; check right side
+  inx
+  lda playerx
+  cmp walls,x
+  bcs clwloopend
+  ; check bottom side
+  inx
+  lda playery
+  cmp walls,x
+  bcs clwloopend
+  ; WE'VE COLLIDED!
+  jsr updatemovedirections
+  jsr playercollided
+  rts ; we can leave this routine
+clwloopend:
+  iny
+  cpy #WALLBOXCOUNT
+  bne clwloop
+  jsr updatemovedirections
+  ; wow collision done
+  rts
+
+; supposed to make x = y*4
+roundxupwalls:
+  ldx #$00
+  cpy #$00
+  beq rxuwend
+  tya
+rxuwloop:
+  inx
+  inx
+  inx
+  inx
+  sec
+  sbc #$01
+  cmp #$00
+  bne rxuwloop
+rxuwend:
   rts
 
 ; call this when the car hits a wall or something
 playercollided:
-  lda negativevel
-  eor #$01 ; flip between 0 and 1
+  ;lda negativevel
+  ;eor #$01 ; flip between 0 and 1
+  lda #$01
   sta negativevel
   ; reduce speed too 
   clc ; make sure carry is clear before rotating
   ror playeraccel ; / 2
+  lda playeraccel
+  cmp #$20
+  bcs plclend
+  lda #$20
+  sta playeraccel ; make sure accel has a minimum so we're moving if stuck in wall
+plclend:
   rts
 
 turncooldown:
@@ -524,6 +592,16 @@ attribute:
 directions:
   ;    U   UR  R  RD   D  LD  L    LU
   .db $02,$0a,$08,$09,$01,$05,$04,$06
+
+walls:
+  ; left, top, right, bottom
+  .db $31, $30, $90, $7f
+  .db $61, $65, $a0, $be
+  .db $99, $af, $d0, $be
+  .db $89, $50, $d0, $6f
+  .db $0a, $a0, $40, $e7
+  .db $c1, $8f, $f0, $9f
+  .db $b1, $01, $f0, $2f
 
   .org $FFFA
   .dw NMI ; label to jump to on nmi
