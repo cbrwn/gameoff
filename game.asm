@@ -28,6 +28,11 @@ tempmovement   .rs 1 ; used for (I never finished this comment wtf)
 playeraccel    .rs 1 ; increases with up/down
 playervel      .rs 1 ; moves player when it overflows
 negativevel    .rs 1
+; stuff to deal with getting stuck in walls because I'm too dumb
+didcollide     .rs 1 ; did we collide this frame?
+colframes      .rs 1 ; how many frames in a row are we inside something
+noclplayerx    .rs 1 ; last x pos where we didn't collide
+noclplayery    .rs 1 ; last y pos where we didn't collide
 
 RESET:
   SEI          ; disable IRQs
@@ -164,13 +169,18 @@ NMI:
   jsr readcontroller
 
   ; game logic
+  lda #$00
+  sta didcollide ; reset our collision flag
+
   jsr turncooldown
   jsr rotateplayer
   jsr accelerateplayer
   ; driveplayer twice as an easy way to move faster
+  jsr driveplayer
+  jsr driveplayer
   jsr collideplayer
-  jsr driveplayer
-  jsr driveplayer
+
+  jsr fixstuckinwall
 
   ; end of nmi
   jsr enablenmi
@@ -367,10 +377,17 @@ rxuwend:
 
 ; call this when the car hits a wall or something
 playercollided:
-  ;lda negativevel
-  ;eor #$01 ; flip between 0 and 1
-  lda #$01
+  lda negativevel
+  eor #$01 ; flip between 0 and 1
+  ;lda #$01
   sta negativevel
+  lda #$01
+  sta didcollide ; set flag to keep track that we collided this frame
+  ; put car at last non-wall position
+  lda noclplayerx
+  sta playerx
+  lda noclplayery
+  sta playery
   ; reduce speed too 
   clc ; make sure carry is clear before rotating
   ror playeraccel ; / 2
@@ -380,6 +397,40 @@ playercollided:
   lda #$20
   sta playeraccel ; make sure accel has a minimum so we're moving if stuck in wall
 plclend:
+  rts
+
+fixstuckinwall:
+  lda didcollide
+  beq fswnocollide
+  ; we did collide
+  lda colframes
+  clc
+  adc #$01
+  sta colframes
+  cmp #$10
+  bcc fswend
+  ; we've been in a wall for 3 frames
+  ; so we'll move to our last known non-wall position
+  lda noclplayerx
+  sta playerx
+  lda noclplayery
+  sta playery
+  lda #$00
+  sta colframes
+  sta playeraccel
+  sta negativevel
+  jmp fswend
+fswnocollide:
+  ; didn't collide this frame
+  ; keep track of this position where we're out of a wall
+  lda playerx
+  sta noclplayerx
+  lda playery
+  sta noclplayery
+  ; reset frame counter
+  lda #$00
+  sta colframes
+fswend:
   rts
 
 turncooldown:

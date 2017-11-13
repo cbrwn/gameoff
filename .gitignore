@@ -3,3 +3,5 @@
 *.fns
 *.nam
 NESASM3.exe
+# I draw to keep notes
+*.png
