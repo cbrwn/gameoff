@@ -16,6 +16,11 @@ CARSPRITE      = $0200
 
 WALLBOXCOUNT   = $07 ; number of boxes which act as walls
 
+TIMERTILEHIGH  = $23
+TIMERTILELOW   = $21
+LAPTILEHIGH    = $23
+LAPTILELOW     = $61
+
   .rsset $0000
 buttons   .rs 1
 
@@ -33,6 +38,14 @@ didcollide     .rs 1 ; did we collide this frame?
 colframes      .rs 1 ; how many frames in a row are we inside something
 noclplayerx    .rs 1 ; last x pos where we didn't collide
 noclplayery    .rs 1 ; last y pos where we didn't collide
+
+timermils      .rs 1
+timer1         .rs 1
+timer10        .rs 1
+timer100       .rs 1
+
+currentlap     .rs 1
+maxlap         .rs 1
 
 RESET:
   SEI          ; disable IRQs
@@ -151,6 +164,10 @@ LoadSpritesLoop:
   lda #$02
   sta rotationindex
   jsr updaterotationfromindex
+  lda #$01
+  sta currentlap
+  lda #$03
+  sta maxlap
 
 loopsies:
   ; just waiting for nmi
@@ -164,6 +181,8 @@ NMI:
 
   ; update graphics
   jsr updateplayersprite
+  jsr displaytimer
+  jsr displaylapcount
 
   ; read inputs
   jsr readcontroller
@@ -171,6 +190,8 @@ NMI:
   ; game logic
   lda #$00
   sta didcollide ; reset our collision flag
+
+  jsr incrementtimer
 
   jsr turncooldown
   jsr rotateplayer
@@ -317,7 +338,6 @@ clpend:
   jsr collidewalls
   rts
 
-; ok so this doesn't work because it changes
 collidewalls
   ldy #$00
 clwloop:
@@ -589,6 +609,80 @@ upsvertflip:
 upsend:
   rts
 
+incrementtimer:
+  lda timermils ; not milliseconds but frames, dumb name
+  clc
+  adc #$01
+  sta timermils
+  cmp #$3c ; ~1 second
+  bne inctend
+  ; 1 second is up
+  lda #$00
+  sta timermils ; reset frame count to 0
+  lda timer1
+  clc
+  adc #$01
+  sta timer1
+  cmp #$0a ; roll over from 1 to 2 digits
+  bne inctend
+  ; rolled over
+  lda #$00
+  sta timer1 ; reset second count to 0
+  lda timer10
+  clc
+  adc #$01
+  sta timer10
+  cmp #$0a ; roll over
+  bne inctend
+  lda #$00 ; reset tens count to 0
+  sta timer10
+  lda timer100
+  clc
+  adc #$01
+  sta timer100
+  cmp #$0a ; rolled over
+  bne inctend
+  lda #$09 ; cap it at $09
+  sta timer100
+inctend:
+  rts
+
+displaytimer:
+  lda $2002 ; start listening for an address
+  lda #TIMERTILEHIGH
+  sta $2006
+  lda #TIMERTILELOW
+  sta $2006
+  lda #$0d ; clock icon
+  sta $2007
+  ;lda #$0e ; hyphen
+  ;sta $2007
+  lda timer100
+  sta $2007
+  lda timer10
+  sta $2007
+  lda timer1
+  sta $2007
+  rts
+
+displaylapcount:
+  lda $2002 ; start listening for an address
+  lda #LAPTILEHIGH
+  sta $2006
+  lda #LAPTILELOW
+  sta $2006
+  lda #$0f ; flag icon
+  sta $2007
+  ;lda #$0e ; hyphen
+  ;sta $2007
+  lda currentlap
+  sta $2007
+  lda #$10 ; slash
+  sta $2007
+  lda maxlap
+  sta $2007
+  rts
+
 readcontroller:
   lda #$01
   sta $4016
@@ -625,7 +719,7 @@ enablenmi:
   .bank 1
   .org $E000
 palette:
-  .db $0f,$2D,$27,$30,  $15,$30,$1a,$09,  $22,$30,$21,$0F,  $22,$27,$17,$0F   ; background palette
+  .db $0f,$2D,$27,$30,  $15,$30,$1a,$09,  $0c,$00,$0f,$30,  $22,$27,$17,$0F   ; background palette
   .db $15,$1C,$15,$14,  $22,$21,$15,$30,  $39,$1C,$15,$14,  $22,$02,$38,$3C   ; sprite palette
 
 sprites:
