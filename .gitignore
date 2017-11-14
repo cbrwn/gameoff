@@ -3,5 +3,7 @@
 *.fns
 *.nam
 NESASM3.exe
+# FCEUXD SP makes .deb files for debugging?
+*.deb
 # I draw to keep notes
 *.png
