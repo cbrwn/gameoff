@@ -169,6 +169,13 @@ LoadSpritesLoop:
   lda #$03
   sta maxlap
 
+  ; apparently one of these needs to be run twice
+  ; to get the icons to show up for some reason
+  ; i'm very confused
+  jsr updatetimerlabel
+  jsr updatetimerlabel
+  jsr updatelaplabel
+
 loopsies:
   ; just waiting for nmi
   JMP loopsies
@@ -181,8 +188,6 @@ NMI:
 
   ; update graphics
   jsr updateplayersprite
-  jsr displaytimer
-  jsr displaylapcount
 
   ; read inputs
   jsr readcontroller
@@ -624,7 +629,7 @@ incrementtimer:
   adc #$01
   sta timer1
   cmp #$0a ; roll over from 1 to 2 digits
-  bne inctend
+  bne updatetimerlabel ; update timer
   ; rolled over
   lda #$00
   sta timer1 ; reset second count to 0
@@ -633,7 +638,7 @@ incrementtimer:
   adc #$01
   sta timer10
   cmp #$0a ; roll over
-  bne inctend
+  bne updatetimerlabel ; update timer
   lda #$00 ; reset tens count to 0
   sta timer10
   lda timer100
@@ -641,13 +646,14 @@ incrementtimer:
   adc #$01
   sta timer100
   cmp #$0a ; rolled over
-  bne inctend
+  bne updatetimerlabel ; update timer
   lda #$09 ; cap it at $09
   sta timer100
+  jmp updatetimerlabel
 inctend:
   rts
 
-displaytimer:
+updatetimerlabel:
   lda $2002 ; start listening for an address
   lda #TIMERTILEHIGH
   sta $2006
@@ -655,8 +661,6 @@ displaytimer:
   sta $2006
   lda #$0d ; clock icon
   sta $2007
-  ;lda #$0e ; hyphen
-  ;sta $2007
   lda timer100
   sta $2007
   lda timer10
@@ -665,7 +669,7 @@ displaytimer:
   sta $2007
   rts
 
-displaylapcount:
+updatelaplabel:
   lda $2002 ; start listening for an address
   lda #LAPTILEHIGH
   sta $2006
@@ -673,8 +677,6 @@ displaylapcount:
   sta $2006
   lda #$0f ; flag icon
   sta $2007
-  ;lda #$0e ; hyphen
-  ;sta $2007
   lda currentlap
   sta $2007
   lda #$10 ; slash
