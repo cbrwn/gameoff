@@ -47,6 +47,9 @@ timer100       .rs 1
 currentlap     .rs 1
 maxlap         .rs 1
 
+loadptrlow     .rs 1 ; load pointer low byte
+loadptrhigh    .rs 1 ; load pointer high byte
+
 RESET:
   SEI          ; disable IRQs
   CLD          ; disable decimal mode
@@ -91,59 +94,49 @@ LoadPalettesLoop:
   CPX #$20            
   BNE LoadPalettesLoop  ;if x = $20, 32 bytes copied, all done
 
+  ; load pointer values
+  lda #LOW(background)
+  sta loadptrlow
+  lda #HIGH(background)
+  sta loadptrhigh
+
 loadbackground:
   lda $2002
   lda #$20
   sta $2006
   lda #$00;#20
   sta $2006
-  ; load in 4 parts
-  ; first part:
   ldx #$00
-loadbackgroundloop0
-  lda nametable0,x
+  ldy #$00
+loadbackgroundloop:
+loadbackgroundloop2:
+  lda [loadptrlow], y
   sta $2007
-  inx
-  cpx #$00
-  bne loadbackgroundloop0
-  ; second part:
-  ldx #$00
-loadbackgroundloop1
-  lda nametable1,x
-  sta $2007
-  inx
-  cpx #$00
-  bne loadbackgroundloop1
-  ; third part:
-  ldx #$00
-loadbackgroundloop2
-  lda nametable2,x
-  sta $2007
-  inx
-  cpx #$00
-  bne loadbackgroundloop2
-  ; last part:
-  ldx #$00
-loadbackgroundloop3
-  lda nametable3,x
-  sta $2007
-  inx
-  cpx #$C0
-  bne loadbackgroundloop3
 
-loadattribute:
-  lda $2002
-  lda #$23
-  sta $2006
-  lda #$c0
-  sta $2006
-  ldx #$00
-loadattributeloop:
-  lda attribute,x
-  sta $2007
+  iny ; loop2
+  cpy #$00
+  bne loadbackgroundloop2 ; keep going til y wraps around to 0
+  
+  ; gone through 256 times
+  inc loadptrhigh ; so we bump up the high byte
   inx
-  cpx #$40
-  bne loadattributeloop
+  cpx #$04
+  bne loadbackgroundloop
+
+
+;loadattribute:
+;  lda $2002
+;  lda #$23
+;  sta $2006
+;  lda #$c0
+;  sta $2006
+;  ldx #$00
+;loadattributeloop:
+;  lda attribute,x
+;  sta $2007
+;  inx
+;  cpx #$40
+;  bne loadattributeloop
 
 LoadSprites:
   ldx #$00
@@ -173,7 +166,7 @@ LoadSpritesLoop:
   ; to get the icons to show up for some reason
   ; i'm very confused
   jsr updatetimerlabel
-  jsr updatetimerlabel
+  jsr updatelaplabel
   jsr updatelaplabel
 
 loopsies:
@@ -667,6 +660,8 @@ updatetimerlabel:
   sta $2007
   lda timer1
   sta $2007
+  lda #$fa
+  sta $2007
   rts
 
 updatelaplabel:
@@ -729,8 +724,6 @@ sprites:
 
 ; background stuff
   .include "map.asm"
-
-attribute:
   .incbin "map.atr"
 
 ; direction bit layout
