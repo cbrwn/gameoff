@@ -98,19 +98,19 @@ background:
 
   ; $2300
   .db $e9, $fa, $fa, $fa, $fa, $fa, $fa, $fc, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-  .db $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ec, $fa
+  .db $ff, $ff, $ef, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ec, $fa
 
   ; $2320
   .db $fa, $fa, $ea, $fa, $fa, $fa, $fa, $fc, $ff, $ff, $ff, $ff, $fd, $ff, $fd, $ff
-  .db $fd, $ff, $fd, $ff, $fd, $ff, $fd, $ff, $fd, $ff, $ff, $ff, $ff, $ff, $ec, $fa
+  .db $fd, $ff, $ef, $ff, $fd, $ff, $fd, $ff, $fd, $ff, $ff, $ff, $ff, $ff, $ec, $fa
 
   ; $2340
   .db $fa, $fa, $fa, $fa, $fa, $fa, $fa, $fc, $ff, $ff, $ff, $ff, $fd, $ff, $fd, $ff
-  .db $fd, $ff, $fd, $ff, $fd, $ff, $fd, $ff, $fd, $ff, $ff, $ff, $ff, $ff, $ec, $fa
+  .db $fd, $ff, $ef, $ff, $fd, $ff, $fd, $ff, $fd, $ff, $ff, $ff, $ff, $ff, $ec, $fa
 
   ; $2360
   .db $fa, $ea, $f9, $fa, $e9, $fa, $fa, $fc, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-  .db $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ec, $f9
+  .db $ff, $ff, $ef, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ec, $f9
 
   ; $2380
   .db $fa, $fa, $fa, $fa, $fa, $fa, $fa, $f7, $eb, $eb, $eb, $eb, $eb, $eb, $eb, $eb

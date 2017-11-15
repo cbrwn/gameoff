@@ -660,7 +660,7 @@ updatetimerlabel:
   sta $2007
   lda timer1
   sta $2007
-  lda #$fa
+  lda #$fa ; put grass here because there's a phantom 0 for some reason
   sta $2007
   rts
 
