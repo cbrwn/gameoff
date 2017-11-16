@@ -13,6 +13,7 @@ PLAYERSPEED    = $01
 TURNSPEED      = $10
 SPRITECARBASE  = $08 ; start of car sprites
 CARSPRITE      = $0200
+FINISHLINEX    = $92
 
 WALLBOXCOUNT   = $07 ; number of boxes which act as walls
 
@@ -46,6 +47,8 @@ timer100       .rs 1
 
 currentlap     .rs 1
 maxlap         .rs 1
+lapflag        .rs 1
+framebeforex   .rs 1
 
 loadptrlow     .rs 1 ; load pointer low byte
 loadptrhigh    .rs 1 ; load pointer high byte
@@ -123,21 +126,6 @@ loadbackgroundloop2:
   cpx #$04
   bne loadbackgroundloop
 
-
-;loadattribute:
-;  lda $2002
-;  lda #$23
-;  sta $2006
-;  lda #$c0
-;  sta $2006
-;  ldx #$00
-;loadattributeloop:
-;  lda attribute,x
-;  sta $2007
-;  inx
-;  cpx #$40
-;  bne loadattributeloop
-
 LoadSprites:
   ldx #$00
 LoadSpritesLoop:
@@ -159,7 +147,7 @@ LoadSpritesLoop:
   jsr updaterotationfromindex
   lda #$01
   sta currentlap
-  lda #$03
+  lda #$05
   sta maxlap
 
   ; apparently one of these needs to be run twice
@@ -188,6 +176,8 @@ NMI:
   ; game logic
   lda #$00
   sta didcollide ; reset our collision flag
+  lda playerx
+  sta framebeforex ; keep track of x before movement
 
   jsr incrementtimer
 
@@ -200,6 +190,7 @@ NMI:
   jsr collideplayer
 
   jsr fixstuckinwall
+  jsr lapcheck
 
   ; end of nmi
   jsr enablenmi
@@ -449,6 +440,50 @@ fswnocollide:
   lda #$00
   sta colframes
 fswend:
+  rts
+
+lapcheck:
+  ; check we're in the finish line vertically
+  lda playery
+  cmp #$bd
+  bcc lpcend
+  ; >= $bd
+  lda playery ; not sure if I need to load this again
+  cmp #$df
+  bcs lpcend
+  ; we are within the lap line vertically
+  ; now to check if we passed the finish line
+  lda framebeforex
+  cmp #FINISHLINEX
+  bcs lpcwasright
+lpcwasleft:
+  ; car was left of the finish line before this frame
+  lda playerx
+  cmp #FINISHLINEX
+  bcc lpcend ; no crossage
+  ; crossed it the correct direction
+  lda lapflag
+  beq lpcleftend ; lap flag = 0
+  ; lap flag = 1
+  jsr lapcomplete
+lpcleftend:
+  lda #$01
+  sta lapflag
+  jmp lpcend
+lpcwasright:
+  ; car was right of the finish line before this frame
+  lda playerx
+  cmp #FINISHLINEX
+  bcs lpcend ; no crossage
+  ; crossed, but the wrong direction
+  lda #$00
+  sta lapflag ; set lap flag to 0 so we know not to count this as a lap
+lpcend:
+  rts
+
+lapcomplete:
+  inc currentlap
+  jsr updatelaplabel
   rts
 
 turncooldown:
