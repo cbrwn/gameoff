@@ -1,29 +1,4 @@
-  .inesprg 1
-  .ineschr 1
-  .inesmap 0
-  .inesmir 1
-
-;;;;;;;;;;;;;;;
-  .bank 0
-  .org $C000 
-
-PLAYERWIDTH    = $08
-PLAYERHEIGHT   = $08
-PLAYERSPEED    = $01
-TURNSPEED      = $10
-SPRITECARBASE  = $08 ; start of car sprites
-CARSPRITE      = $0200
-FINISHLINEX    = $92
-
-WALLBOXCOUNT   = $07 ; number of boxes which act as walls
-
-TIMERTILEHIGH  = $23
-TIMERTILELOW   = $21
-LAPTILEHIGH    = $23
-LAPTILELOW     = $61
-
-  .rsset $0000
-buttons   .rs 1
+; race game state - main game
 
 playerx        .rs 1
 playery        .rs 1
@@ -45,97 +20,14 @@ timer1         .rs 1
 timer10        .rs 1
 timer100       .rs 1
 
-currentlap     .rs 1
-maxlap         .rs 1
-lapflag        .rs 1
-framebeforex   .rs 1
+; switch to game state here
+startgamestate:
+  jsr disablenmi
 
-loadptrlow     .rs 1 ; load pointer low byte
-loadptrhigh    .rs 1 ; load pointer high byte
+  lda #$00
+  sta gamestate
 
-RESET:
-  SEI          ; disable IRQs
-  CLD          ; disable decimal mode
-  LDX #$40
-  STX $4017    ; disable APU frame IRQ
-  LDX #$FF
-  TXS          ; Set up stack
-  LDX #$00
-  STX $2000    ; disable NMI
-  STX $2001    ; disable rendering
-  STX $4010    ; disable DMC IRQs
-
-  jsr waitvblank
-
-clrmem:
-  LDA #$00
-  STA $0000, x
-  STA $0100, x
-  STA $0300, x
-  STA $0400, x
-  STA $0500, x
-  STA $0600, x
-  STA $0700, x
-  LDA #$FE
-  STA $0200, x    ;move all sprites off screen
-  INX
-  BNE clrmem
-   
-  jsr waitvblank
-
-LoadPalettes:
-  LDA $2002    ; read PPU status to reset the high/low latch
-  LDA #$3F
-  STA $2006    ; write the high byte of $3F00 address
-  LDA #$00
-  STA $2006    ; write the low byte of $3F00 address
-  LDX #$00
-LoadPalettesLoop:
-  LDA palette, x        ;load palette byte
-  STA $2007             ;write to PPU
-  INX                   ;set index to next byte
-  CPX #$20            
-  BNE LoadPalettesLoop  ;if x = $20, 32 bytes copied, all done
-
-  ; load pointer values
-  lda #LOW(background)
-  sta loadptrlow
-  lda #HIGH(background)
-  sta loadptrhigh
-
-loadbackground:
-  lda $2002
-  lda #$20
-  sta $2006
-  lda #$00;#20
-  sta $2006
-  ldx #$00
-  ldy #$00
-loadbackgroundloop:
-loadbackgroundloop2:
-  lda [loadptrlow], y
-  sta $2007
-
-  iny ; loop2
-  cpy #$00
-  bne loadbackgroundloop2 ; keep going til y wraps around to 0
-  
-  ; gone through 256 times
-  inc loadptrhigh ; so we bump up the high byte
-  inx
-  cpx #$04
-  bne loadbackgroundloop
-
-LoadSprites:
-  ldx #$00
-LoadSpritesLoop:
-  lda sprites,x
-  sta  $0200,x
-  inx
-  cpx #$04
-  bne LoadSpritesLoop
-
-  jsr enablenmi
+  jsr loadgamestuff
 
   ; initialize variables and stuff
   lda #$80
@@ -157,15 +49,15 @@ LoadSpritesLoop:
   jsr updatelaplabel
   jsr updatelaplabel
 
-loopsies:
-  ; just waiting for nmi
-  JMP loopsies
+  jsr enablenmi
+  rts
 
-NMI:
-  LDA #$00
-  STA $2003  ; set the low byte (00) of the RAM address
-  LDA #$02
-  STA $4014  ; set the high byte (02) of the RAM address, start the transfer
+dogamestate:
+  ; do all the background updating before nmi stuff
+  jsr updatetimerlabel
+  jsr updatelaplabel
+
+  jsr enablenmi
 
   ; update graphics
   jsr updateplayersprite
@@ -191,11 +83,7 @@ NMI:
 
   jsr fixstuckinwall
   jsr lapcheck
-
-  ; end of nmi
-  jsr enablenmi
-
-  RTI ; return from interrupt
+  rti
 
 driveplayer:
   lda playervel
@@ -483,7 +371,6 @@ lpcend:
 
 lapcomplete:
   inc currentlap
-  jsr updatelaplabel
   rts
 
 turncooldown:
@@ -657,7 +544,7 @@ incrementtimer:
   adc #$01
   sta timer1
   cmp #$0a ; roll over from 1 to 2 digits
-  bne updatetimerlabel ; update timer
+  bne inctend
   ; rolled over
   lda #$00
   sta timer1 ; reset second count to 0
@@ -666,7 +553,7 @@ incrementtimer:
   adc #$01
   sta timer10
   cmp #$0a ; roll over
-  bne updatetimerlabel ; update timer
+  bne inctend
   lda #$00 ; reset tens count to 0
   sta timer10
   lda timer100
@@ -674,10 +561,9 @@ incrementtimer:
   adc #$01
   sta timer100
   cmp #$0a ; rolled over
-  bne updatetimerlabel ; update timer
+  bne inctend
   lda #$09 ; cap it at $09
   sta timer100
-  jmp updatetimerlabel
 inctend:
   rts
 
@@ -731,60 +617,42 @@ readcontrollerloop:
   ; A B SEL STA U D L R
   rts
 
-waitvblank:
-  bit $2002
-  bpl waitvblank
-  rts
-
-enablenmi:
-  lda #%10010000
-  sta $2000
-  lda #%00011110
-  sta $2001
-  ; no scrolling
+; load background and sprites and stuff
+loadgamestuff:
+  ; load background
+  ; load pointer values
+  lda #LOW(background)
+  sta loadptrlow
+  lda #HIGH(background)
+  sta loadptrhigh
+  lda $2002
+  lda #$20
+  sta $2006
   lda #$00
-  sta $2005
-  sta $2005 
+  sta $2006
+  ldx #$00
+  ldy #$00
+loadgamebgl1: ; load game background loop 1
+loadgamebgl2: ; and 2
+  lda [loadptrlow], y
+  sta $2007
+
+  iny ; loop2
+  cpy #$00
+  bne loadgamebgl2 ; keep going til y wraps around to 0
+  
+  ; gone through 256 times
+  inc loadptrhigh ; so we bump up the high byte
+  inx
+  cpx #$04
+  bne loadgamebgl1
+
+  ; load sprites
+  ldx #$00
+loadgamesprites:
+  lda sprites,x
+  sta  $0200,x
+  inx
+  cpx #$04
+  bne loadgamesprites
   rts
- 
-;;;;;;;;;;;;;;  
-  .bank 1
-  .org $E000
-palette:
-  .db $0f,$2D,$27,$30,  $15,$30,$1a,$09,  $0c,$00,$0f,$30,  $22,$27,$17,$0F   ; background palette
-  .db $15,$1C,$15,$14,  $22,$21,$15,$30,  $39,$1C,$15,$14,  $22,$02,$38,$3C   ; sprite palette
-
-sprites:
-  .db $10,SPRITECARBASE,$01,$80 ; $0200
-
-; background stuff
-  .include "map.asm"
-  .incbin "map.atr"
-
-; direction bit layout
-; R L U D
-; 0 0 0 0
-directions:
-  ;    U   UR  R  RD   D  LD  L    LU
-  .db $02,$0a,$08,$09,$01,$05,$04,$06
-
-walls:
-  ; left, top, right, bottom
-  .db $31, $30, $90, $7f
-  .db $61, $65, $a0, $be
-  .db $99, $af, $d0, $be
-  .db $89, $50, $d0, $6f
-  .db $0a, $a0, $40, $e7
-  .db $c1, $8f, $f0, $9f
-  .db $b1, $01, $f0, $2f
-
-  .org $FFFA
-  .dw NMI ; label to jump to on nmi
-  .dw RESET
-  .dw 0 ; not using irq
-  
-  
-;;;;;;;;;;;;;;  
-  .bank 2
-  .org $0000
-  .incbin "sprites.chr"

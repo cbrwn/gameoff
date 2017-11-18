@@ -1,5 +1,3 @@
-
-background:
   ; $2000
   .db $f9, $fa, $fa, $fa, $fa, $fa, $fa, $e9, $fa, $fa, $fa, $f9, $fa, $fa, $fa, $fa
   .db $fa, $fa, $ea, $fa, $fa, $fa, $fa, $fa, $fa, $fa, $fa, $e9, $fa, $fa, $f9, $fa
