@@ -7,29 +7,9 @@
   .bank 0
   .org $C000 
 
-PLAYERWIDTH    = $08
-PLAYERHEIGHT   = $08
-PLAYERSPEED    = $01
-TURNSPEED      = $10
-SPRITECARBASE  = $08 ; start of car sprites
-CARSPRITE      = $0200
-FINISHLINEX    = $92
-
-WALLBOXCOUNT   = $07 ; number of boxes which act as walls
-
-TIMERTILEHIGH  = $23
-TIMERTILELOW   = $21
-LAPTILEHIGH    = $23
-LAPTILELOW     = $61
-
   .rsset $0000
 buttons   .rs 1
 gamestate .rs 1
-
-currentlap     .rs 1
-maxlap         .rs 1
-lapflag        .rs 1
-framebeforex   .rs 1
 
 loadptrlow     .rs 1 ; load pointer low byte
 loadptrhigh    .rs 1 ; load pointer high byte

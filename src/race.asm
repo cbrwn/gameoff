@@ -1,5 +1,20 @@
 ; race game state - main game
 
+PLAYERWIDTH    = $08
+PLAYERHEIGHT   = $08
+PLAYERSPEED    = $01
+TURNSPEED      = $10
+SPRITECARBASE  = $08 ; start of car sprites
+CARSPRITE      = $0200
+FINISHLINEX    = $92
+
+WALLBOXCOUNT   = $07 ; number of boxes which act as walls
+
+TIMERTILEHIGH  = $23
+TIMERTILELOW   = $21
+LAPTILEHIGH    = $23
+LAPTILELOW     = $61
+
 playerx        .rs 1
 playery        .rs 1
 rotationindex  .rs 1
@@ -14,6 +29,11 @@ didcollide     .rs 1 ; did we collide this frame?
 colframes      .rs 1 ; how many frames in a row are we inside something
 noclplayerx    .rs 1 ; last x pos where we didn't collide
 noclplayery    .rs 1 ; last y pos where we didn't collide
+
+currentlap     .rs 1
+maxlap         .rs 1
+lapflag        .rs 1
+framebeforex   .rs 1
 
 timermils      .rs 1
 timer1         .rs 1
