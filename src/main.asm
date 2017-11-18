@@ -11,9 +11,6 @@
 buttons   .rs 1
 gamestate .rs 1
 
-loadptrlow     .rs 1 ; load pointer low byte
-loadptrhigh    .rs 1 ; load pointer high byte
-
 RESET:
   SEI          ; disable IRQs
   CLD          ; disable decimal mode
@@ -58,7 +55,7 @@ LoadPalettesLoop:
   CPX #$20            
   BNE LoadPalettesLoop  ;if x = $20, 32 bytes copied, all done
 
-  jsr startgamestate
+  jsr startintrostate
 
   jsr enablenmi
 
@@ -74,7 +71,7 @@ NMI:
 
   lda gamestate
   cmp #$00
-  beq dogamestate ; change to menu/intro when it's a thing
+  beq dointrostate ; change to menu/intro when it's a thing
 
   lda gamestate
   cmp #$01
@@ -82,6 +79,7 @@ NMI:
 
   rti ; in case state isn't handled
 
+  .include "intro.asm"
   .include "race.asm"
 
 waitvblank:

@@ -44,7 +44,7 @@ timer100       .rs 1
 startgamestate:
   jsr disablenmi
 
-  lda #$00
+  lda #$01
   sta gamestate
 
   jsr loadgamestuff
@@ -642,9 +642,9 @@ loadgamestuff:
   ; load background
   ; load pointer values
   lda #LOW(background)
-  sta loadptrlow
+  sta playerx
   lda #HIGH(background)
-  sta loadptrhigh
+  sta playery ; use playerx and y as the pointer instead of having its own variable
   lda $2002
   lda #$20
   sta $2006
@@ -654,7 +654,7 @@ loadgamestuff:
   ldy #$00
 loadgamebgl1: ; load game background loop 1
 loadgamebgl2: ; and 2
-  lda [loadptrlow], y
+  lda [playerx], y
   sta $2007
 
   iny ; loop2
@@ -662,7 +662,7 @@ loadgamebgl2: ; and 2
   bne loadgamebgl2 ; keep going til y wraps around to 0
   
   ; gone through 256 times
-  inc loadptrhigh ; so we bump up the high byte
+  inc playery ; so we bump up the high byte
   inx
   cpx #$04
   bne loadgamebgl1
