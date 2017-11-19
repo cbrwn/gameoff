@@ -11,6 +11,9 @@
 buttons   .rs 1
 gamestate .rs 1
 
+  .include "intro.asm"
+  .include "race.asm"
+
 RESET:
   SEI          ; disable IRQs
   CLD          ; disable decimal mode
@@ -71,16 +74,18 @@ NMI:
 
   lda gamestate
   cmp #$00
-  beq dointrostate ; change to menu/intro when it's a thing
+  bne nmistatecheck1
+  jmp dointrostate ; branch around this because these are too far away to branch relatively
 
+nmistatecheck1:
   lda gamestate
   cmp #$01
-  beq dogamestate
+  bne nmistatecheck2
+  jmp dogamestate
+
+nmistatecheck2:
 
   rti ; in case state isn't handled
-
-  .include "intro.asm"
-  .include "race.asm"
 
 waitvblank:
   bit $2002
@@ -118,6 +123,9 @@ sprites:
 background:
   .include "map.asm"
   .incbin "map.atr"
+
+introscreen:
+  .incbin "introscreen.bin"
 
 ; direction bit layout
 ; R L U D

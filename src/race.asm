@@ -2,7 +2,6 @@
 
 PLAYERWIDTH    = $08
 PLAYERHEIGHT   = $08
-PLAYERSPEED    = $01
 TURNSPEED      = $10
 SPRITECARBASE  = $08 ; start of car sprites
 CARSPRITE      = $0200
