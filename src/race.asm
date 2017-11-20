@@ -47,6 +47,7 @@ startgamestate:
   sta gamestate
 
   jsr loadgamestuff
+  jsr enablesound
 
   ; initialize variables and stuff
   lda #$80
@@ -100,9 +101,31 @@ dogamestate:
   jsr driveplayer
   jsr collideplayer
 
+  jsr carsounds
+
   jsr fixstuckinwall
   jsr lapcheck
   rti
+
+carsounds: ;brrrrrrrrrummmmmmmmmmmmm 
+  lda #%01000011
+  sta $4000
+  lda playeraccel
+  beq csstopsound
+  sec ; make sure we carry over the last bit
+  ror a
+  eor #%01111111
+  sta $4002
+  lda timermils
+  and #%00000011
+  ora #$00000001 ; keep this bit always on
+  sta $4003
+  rts
+csstopsound: ; no soundarino
+  lda #$00
+  sta $4002
+  sta $4003
+  rts
 
 driveplayer:
   lda playervel

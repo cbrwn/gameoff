@@ -58,7 +58,7 @@ LoadPalettesLoop:
   CPX #$20            
   BNE LoadPalettesLoop  ;if x = $20, 32 bytes copied, all done
 
-  jsr startintrostate
+  jsr startgamestate;startintrostate
 
   jsr enablenmi
 
@@ -107,6 +107,11 @@ disablenmi: ; (and rendering but whatever)
   lda #$00
   sta $2000 ; no nmi
   sta $2001 ; or rendering
+  rts
+
+enablesound:
+  lda #%00000001 ; square 1 channel
+  sta $4015
   rts
  
 ;;;;;;;;;;;;;;  
