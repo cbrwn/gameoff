@@ -3,26 +3,26 @@ introloadlow  = $03
 introloadhigh = $04
 
 startintrostate:
-    jsr disablenmi
-    lda #$00
-    sta gamestate
-    sta introtimer
+  jsr disablenmi
+  lda #$00
+  sta gamestate
+  sta introtimer
 
-    jsr loadintrostuff
+  jsr loadintrostuff
 
-    jsr enablenmi
-    rts
+  jsr enablenmi
+  rts
 
 dointrostate:
-    lda introtimer
-    clc
-    adc #$01
-    sta introtimer
-    cmp #$ff ; wait 255 frames
-    bne disnochange
-    jsr startgamestate
-disnochange:
-    rti
+  lda introtimer
+  clc
+  adc #$01
+  sta introtimer
+  cmp #$ff ; wait 255 frames
+  bne disnochange
+  jsr startgamestate
+  disnochange:
+  rti
 
 loadintrostuff:
   lda #LOW(introscreen)
