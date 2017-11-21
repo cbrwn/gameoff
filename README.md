@@ -10,4 +10,4 @@ build.bat refers to [NESASM3](http://www.nespowerpak.com/nesasm/NESASM3.zip) ([w
 
 ## x-nes
 
-to play this on the itch.io page I'm using the wonderful [x-nes](https://github.com/koenkivits/x-nes) JavaScript emulator, which is set up in the `web` folder
+to play this on the itch.io page I'm using the wonderful [x-nes](https://github.com/koenkivits/x-nes) JavaScript emulator
