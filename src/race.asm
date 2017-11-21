@@ -13,6 +13,8 @@ TIMERTILEHIGH  = $23
 TIMERTILELOW   = $21
 LAPTILEHIGH    = $23
 LAPTILELOW     = $61
+CDOWNTILEHIGH  = $21
+CDOWNTILELOW   = $d0
 
 playerx        .rs 1
 playery        .rs 1
@@ -63,7 +65,7 @@ startgamestate:
   sta currentlap
   lda #$05
   sta maxlap
-  lda #$03
+  lda #$05
   sta countdown
 
   ; reset things in the case of coming back from end screen
@@ -89,6 +91,7 @@ dogamestate:
   ; do all the background updating before nmi stuff
   jsr updatetimerlabel
   jsr updatelaplabel
+  jsr updatecountdownlabel
 
   jsr enablenmi
 
@@ -128,11 +131,28 @@ docountdown:
   clc
   adc #$01
   sta timermils
-  cmp #$3c
+  cmp #$20
   bne dcdend
   lda #$00
   sta timermils
   dec countdown
+  lda #%00000111
+  sta $4000
+  lda #%11011111
+  sta $4002
+  lda countdown
+  cmp #$01
+  beq dcdstartsound
+  bcc dcdend
+  ; boop boop boop
+  ; beeeeeeeeeeeep
+  lda #%01111011
+  sta $4003
+  jmp dcdend
+dcdstartsound:
+  ; beeeeeeeeeeeep
+  lda #%11111001
+  sta $4003
 dcdend:
   rts
 
@@ -674,6 +694,21 @@ updatelaplabel:
   lda #$10 ; slash
   sta $2007
   lda maxlap
+  sta $2007
+  rts
+
+updatecountdownlabel:
+  lda $2002
+  lda #CDOWNTILEHIGH
+  sta $2006
+  lda #CDOWNTILELOW
+  sta $2006
+  lda countdown
+  bne ucdlend
+  lda #$fb
+ucdlend:
+  sec
+  sbc #$01
   sta $2007
   rts
 
