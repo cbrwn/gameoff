@@ -66,6 +66,15 @@ startgamestate:
   lda #$03
   sta countdown
 
+  ; reset things in the case of coming back from end screen
+  lda #$00
+  sta lapflag
+  sta timermils
+  sta timer1
+  sta timer10
+  sta timer100
+  sta playeraccel
+
   ; apparently one of these needs to be run twice
   ; to get the icons to show up for some reason
   ; i'm very confused
@@ -242,35 +251,35 @@ mplbackend:
 collideplayer:
   ; check left wall
   lda playerx
-  cmp #$10
+  cmp #$0f
   bcs clpchecktopwall
-  lda #$11
+  lda #$10
   sta playerx
   jsr playercollided
   jmp clpend
 clpchecktopwall:
   ; check top wall
   lda playery
-  cmp #$10
+  cmp #$0e
   bcs clpcheckrightwall
-  lda #$11
+  lda #$0f
   sta playery
   jsr playercollided
   cmp clpend
 clpcheckrightwall:
   ; check right wall
   lda playerx
-  cmp #$e8
+  cmp #$ea
   bcc clpcheckbottomwall
-  lda #$e7
+  lda #$e9
   sta playerx
   jsr playercollided
   cmp clpend
 clpcheckbottomwall:
   lda playery
-  cmp #$d8
+  cmp #$d9
   bcc clpend
-  lda #$d7
+  lda #$d8
   sta playery
   jsr playercollided
 clpend:

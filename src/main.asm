@@ -146,8 +146,7 @@ sprites:
 
 ; background stuff
 background:
-  .include "map.asm"
-  .incbin "map.atr"
+  .incbin "racetrack1.bin"
 
 introscreen:
   .incbin "introscreen.bin"
