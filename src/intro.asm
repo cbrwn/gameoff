@@ -1,4 +1,4 @@
-introtimer    = $00
+introtimer    = $05
 introloadlow  = $03
 introloadhigh = $04
 

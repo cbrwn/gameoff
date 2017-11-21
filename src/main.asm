@@ -13,6 +13,7 @@ gamestate .rs 1
 
   .include "intro.asm"
   .include "race.asm"
+  .include "end.asm"
 
 RESET:
   SEI          ; disable IRQs
@@ -37,10 +38,10 @@ clrmem:
   STA $0500, x
   STA $0600, x
   STA $0700, x
-  LDA #$FE
-  STA $0200, x    ;move all sprites off screen
   INX
   BNE clrmem
+
+  jsr clearsprites
    
   jsr waitvblank
 
@@ -58,7 +59,7 @@ LoadPalettesLoop:
   CPX #$20            
   BNE LoadPalettesLoop  ;if x = $20, 32 bytes copied, all done
 
-  jsr startgamestate;startintrostate
+  jsr startintrostate
 
   jsr enablenmi
 
@@ -72,6 +73,9 @@ NMI:
   LDA #$02
   STA $4014  ; set the high byte (02) of the RAM address, start the transfer
 
+  ; read inputs
+  jsr readcontroller
+
   lda gamestate
   cmp #$00
   bne nmistatecheck1
@@ -84,12 +88,28 @@ nmistatecheck1:
   jmp dogamestate
 
 nmistatecheck2:
+  lda gamestate
+  cmp #$02
+  bne nmistatecheck3
+  jmp doendstate
+
+nmistatecheck3:
 
   rti ; in case state isn't handled
 
 waitvblank:
   bit $2002
   bpl waitvblank
+  rts
+
+clearsprites:
+  ldx #$00
+  lda #$FE
+clearspriteloop:
+  sta $0200, x
+  inx
+  cpx #$00
+  bne clearspriteloop
   rts
 
 enablenmi:
@@ -131,6 +151,9 @@ background:
 
 introscreen:
   .incbin "introscreen.bin"
+
+endscreen:
+  .incbin "endscreen.bin"
 
 ; direction bit layout
 ; R L U D

@@ -3,6 +3,10 @@
 *.fns
 *.nam
 NESASM3.exe
+# palette file I just use for NES Screen Tool
+*.pal
+# web folder
+web/*
 # FCEUXD SP makes .deb files for debugging?
 *.deb
 # I draw to keep notes

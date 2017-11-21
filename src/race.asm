@@ -34,6 +34,8 @@ maxlap         .rs 1
 lapflag        .rs 1
 framebeforex   .rs 1
 
+countdown      .rs 1
+
 timermils      .rs 1
 timer1         .rs 1
 timer10        .rs 1
@@ -61,6 +63,8 @@ startgamestate:
   sta currentlap
   lda #$05
   sta maxlap
+  lda #$03
+  sta countdown
 
   ; apparently one of these needs to be run twice
   ; to get the icons to show up for some reason
@@ -82,10 +86,13 @@ dogamestate:
   ; update graphics
   jsr updateplayersprite
 
-  ; read inputs
-  jsr readcontroller
-
   ; game logic
+  lda countdown
+  beq gsrace
+  ; still counting down
+  jsr docountdown
+  rti
+gsrace:
   lda #$00
   sta didcollide ; reset our collision flag
   lda playerx
@@ -106,6 +113,19 @@ dogamestate:
   jsr fixstuckinwall
   jsr lapcheck
   rti
+
+docountdown:
+  lda timermils
+  clc
+  adc #$01
+  sta timermils
+  cmp #$3c
+  bne dcdend
+  lda #$00
+  sta timermils
+  dec countdown
+dcdend:
+  rts
 
 carsounds: ;brrrrrrrrrummmmmmmmmmmmm 
   lda #%01000011
@@ -413,6 +433,11 @@ lpcend:
 
 lapcomplete:
   inc currentlap
+  lda currentlap
+  cmp maxlap
+  bne lcend
+  jsr startendstate
+lcend:
   rts
 
 turncooldown:
