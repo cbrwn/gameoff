@@ -1,10 +1,12 @@
+; intro splash screen thing
+
 introtimer    = $05
 introloadlow  = $03
 introloadhigh = $04
 
 startintrostate:
   jsr disablenmi
-  lda #$00
+  lda #STATE_INTRO
   sta gamestate
   sta introtimer
 
@@ -14,15 +16,16 @@ startintrostate:
   rts
 
 dointrostate:
+  jsr enablenmi
   lda introtimer
   clc
   adc #$01
   sta introtimer
   cmp #$ff ; wait 255 frames
   bne disnochange
-  jsr startgamestate
-  disnochange:
-  rti
+  jsr startmenustate
+disnochange:
+  jmp nmiend
 
 loadintrostuff:
   lda #LOW(introscreen)

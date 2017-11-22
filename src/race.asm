@@ -24,6 +24,7 @@ playerrottimer .rs 1
 tempmovement   .rs 1 ; used for (I never finished this comment wtf)
 playeraccel    .rs 1 ; increases with up/down
 playervel      .rs 1 ; moves player when it overflows
+drivespeed     .rs 1
 negativevel    .rs 1
 ; stuff to deal with getting stuck in walls because I'm too dumb
 didcollide     .rs 1 ; did we collide this frame?
@@ -47,7 +48,7 @@ timer100       .rs 1
 startgamestate:
   jsr disablenmi
 
-  lda #$01
+  lda #STATE_RACE
   sta gamestate
 
   jsr loadgamestuff
@@ -61,15 +62,12 @@ startgamestate:
   lda #$02
   sta rotationindex
   jsr updaterotationfromindex
-  lda #$01
-  sta currentlap
-  lda #$05
-  sta maxlap
   lda #$05
   sta countdown
 
   ; reset things in the case of coming back from end screen
   lda #$00
+  sta currentlap
   sta lapflag
   sta timermils
   sta timer1
@@ -103,7 +101,7 @@ dogamestate:
   beq gsrace
   ; still counting down
   jsr docountdown
-  rti
+  jmp nmiend
 gsrace:
   lda #$00
   sta didcollide ; reset our collision flag
@@ -124,7 +122,7 @@ gsrace:
 
   jsr fixstuckinwall
   jsr lapcheck
-  rti
+  jmp nmiend
 
 docountdown:
   lda timermils
@@ -201,7 +199,7 @@ accelerateplayer:
   lda negativevel
   bne aplnobutton
   lda playeraccel
-  cmp #$b0
+  cmp drivespeed
   bcs aplend
   inc playeraccel
   inc playeraccel
@@ -690,6 +688,8 @@ updatelaplabel:
   lda #$0f ; flag icon
   sta $2007
   lda currentlap
+  clc
+  adc #$01
   sta $2007
   lda #$10 ; slash
   sta $2007
@@ -710,22 +710,6 @@ ucdlend:
   sec
   sbc #$01
   sta $2007
-  rts
-
-readcontroller:
-  lda #$01
-  sta $4016
-  lda #$00
-  sta $4016
-  ldx #$08
-readcontrollerloop:
-  lda $4016
-  lsr a ; push bit 0 into carry
-  rol buttons ; shift buttons left and push carry into bit 0
-  dex
-  bne readcontrollerloop
-  ; 7 6  5   4  3 2 1 0
-  ; A B SEL STA U D L R
   rts
 
 ; load background and sprites and stuff

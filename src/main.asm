@@ -7,6 +7,11 @@
   .bank 0
   .org $C000 
 
+STATE_INTRO = $00
+STATE_MENU  = $01
+STATE_RACE  = $02
+STATE_END   = $03
+
   .rsset $0000
 buttons   .rs 1
 gamestate .rs 1
@@ -14,6 +19,7 @@ gamestate .rs 1
   .include "intro.asm"
   .include "race.asm"
   .include "end.asm"
+  .include "menu.asm"
 
 RESET:
   SEI          ; disable IRQs
@@ -77,25 +83,36 @@ NMI:
   jsr readcontroller
 
   lda gamestate
-  cmp #$00
-  bne nmistatecheck1
-  jmp dointrostate ; branch around this because these are too far away to branch relatively
+  cmp #STATE_INTRO
+  beq nintro
 
-nmistatecheck1:
   lda gamestate
-  cmp #$01
-  bne nmistatecheck2
+  cmp #STATE_MENU
+  beq nmenu
+
+  lda gamestate
+  cmp #STATE_RACE
+  beq ngame
+
+  lda gamestate
+  cmp #STATE_END
+  beq nend
+  
+nmiend:
+  rti ; in case state isn't handled
+
+  ; set a bunch of labels here so we can branch to the states while in range
+nintro:
+  jmp dointrostate
+
+ngame:
   jmp dogamestate
 
-nmistatecheck2:
-  lda gamestate
-  cmp #$02
-  bne nmistatecheck3
+nend:
   jmp doendstate
 
-nmistatecheck3:
-
-  rti ; in case state isn't handled
+nmenu:
+  jmp domenustate
 
 waitvblank:
   bit $2002
@@ -133,6 +150,22 @@ enablesound:
   lda #%00000001 ; square 1 channel
   sta $4015
   rts
+
+readcontroller:
+  lda #$01
+  sta $4016
+  lda #$00
+  sta $4016
+  ldx #$08
+readcontrollerloop:
+  lda $4016
+  lsr a ; push bit 0 into carry
+  rol buttons ; shift buttons left and push carry into bit 0
+  dex
+  bne readcontrollerloop
+  ; 7 6  5   4  3 2 1 0
+  ; A B SEL STA U D L R
+  rts
  
 ;;;;;;;;;;;;;;  
   .bank 1
@@ -144,6 +177,28 @@ palette:
 sprites:
   .db $10,SPRITECARBASE,$01,$80 ; $0200
 
+menuselecttiles: ; low bytes of the tiles corresponding to the menu indicator position
+  .db $26,$66,$a6
+
+lapselections:
+  .db $03,$06,$09
+
+speedselections:
+  .db $90,$b0,$f0
+
+; difficulty strings
+difstringeasy:
+  ;    E   A   S   Y  N/A N/A
+  .db $15,$11,$23,$29,$fa,$fa
+
+difstringmedium:
+  ;    M   E   D   I   U   M
+  .db $1d,$15,$14,$19,$25,$1d
+
+difstringhard:
+  ;    H   A   R   D  N/A N/A
+  .db $18,$11,$22,$14,$fa,$fa
+
 ; background stuff
 background:
   .incbin "racetrack1.bin"
@@ -153,6 +208,9 @@ introscreen:
 
 endscreen:
   .incbin "endscreen.bin"
+
+menuscreen:
+  .incbin "menuscreen.bin"
 
 ; direction bit layout
 ; R L U D

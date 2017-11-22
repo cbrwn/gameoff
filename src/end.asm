@@ -1,3 +1,5 @@
+; results screen
+
 endscreenlow  = $02
 endscreenhigh = $03
 
@@ -9,7 +11,7 @@ timeresultpositionlow  = $cc
 startendstate:
   jsr disablenmi
   
-  lda #$02
+  lda #STATE_END
   sta gamestate
   jsr loadendstuff
 
@@ -17,12 +19,13 @@ startendstate:
   rts
 
 doendstate:
+  jsr enablenmi
   lda buttons
   and #%00100000
   beq desnostart
-  jsr startintrostate
+  jsr startmenustate
 desnostart:
-  rti
+  jmp nmiend
 
 loadendstuff:
   jsr clearsprites
