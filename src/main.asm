@@ -171,7 +171,7 @@ readcontrollerloop:
   .bank 1
   .org $E000
 palette:
-  .db $0f,$2D,$27,$30,  $15,$30,$1a,$09,  $0c,$00,$0f,$30,  $22,$27,$17,$0F   ; background palette
+  .db $0f,$2D,$27,$30,  $15,$30,$1a,$09,  $15,$2d,$27,$30,  $22,$27,$17,$0F   ; background palette
   .db $15,$1C,$15,$14,  $22,$21,$15,$30,  $39,$1C,$15,$14,  $22,$02,$38,$3C   ; sprite palette
 
 sprites:
@@ -225,9 +225,13 @@ track1background:
 track2background:
   .incbin "racetrack2.bin"
 
+track3background:
+  .incbin "racetrack3.bin"
+
 trackbgoffsets:
   .db LOW(track1background), HIGH(track1background)
   .db LOW(track2background), HIGH(track2background)
+  .db LOW(track3background), HIGH(track3background)
 
 ; track walls
 track1walls:
@@ -254,30 +258,47 @@ track2walls:
   .db $e2, $91, $fb, $fb
   .db $d2, $00, $fb, $1e
 
+track3walls:
+  .db $82, $08, $9f, $5e
+  .db $92, $61, $fb, $6e
+  .db $e2, $d1, $fb, $fb
+  .db $08, $d1, $1f, $fb
+  .db $08, $08, $1f, $1e
+  .db $32, $b1, $7f, $be
+  .db $32, $31, $5f, $9e
+  .db $62, $81, $6f, $9e
+  .db $62, $91, $cf, $9e
+  .db $92, $91, $cf, $ae
+  .db $92, $91, $9f, $be
+
 trackwalloffsets:
   .db LOW(track1walls), HIGH(track1walls)
   .db LOW(track2walls), HIGH(track2walls)
+  .db LOW(track3walls), HIGH(track3walls)
 
 trackwallcounts:
-  ; track1, track2
-  .db $07, $0c
+  ; track1, track2, track3
+  .db $07, $0c, $0b
 
 tracklabels:
   ;   timer high, timer low, lap high, lap low, countdown high, cdown low
   .db $23, $21, $23, $61, $21, $d0 ; track 1
   .db $23, $23, $23, $63, $23, $48 ; track 2
+  .db $20, $97, $20, $d7, $21, $32 ; track 3
 
 trackfinishlinex:
-  ; track1, track2
-  .db $92, $7f
+  ; track1, track2, track 3
+  .db $92, $7f, $b8
 
 trackfinishliney:
   .db $bd, $df ; track 1 top,bot
   .db $0d, $2f ; track 2 top,bot
+  .db $6d, $8f ; track 3 top,bot
 
 trackplayerstarts:
   .db $80, $ca ; track 1 x,y
   .db $70, $15 ; track 2 x,y
+  .db $a8, $76 ; track 3 x,y
 
   .org $FFFA
   .dw NMI ; label to jump to on nmi
