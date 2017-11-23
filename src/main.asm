@@ -228,10 +228,14 @@ track2background:
 track3background:
   .incbin "racetrack3.bin"
 
+track4background:
+  .incbin "racetrack4.bin"
+
 trackbgoffsets:
   .db LOW(track1background), HIGH(track1background)
   .db LOW(track2background), HIGH(track2background)
   .db LOW(track3background), HIGH(track3background)
+  .db LOW(track4background), HIGH(track4background)
 
 ; track walls
 track1walls:
@@ -253,7 +257,7 @@ track2walls:
   .db $92, $91, $af, $be
   .db $62, $61, $8f, $6e
   .db $62, $61, $6f, $de
-  .db $00, $b1, $6f, $de
+  .db $08, $b1, $6f, $de
   .db $d2, $c1, $fb, $fb
   .db $e2, $91, $fb, $fb
   .db $d2, $00, $fb, $1e
@@ -271,34 +275,59 @@ track3walls:
   .db $92, $91, $cf, $ae
   .db $92, $91, $9f, $be
 
+track4walls:
+  ; outer walls
+  .db $08, $08, $1f, $9e ; leftmost vertical wall
+  .db $08, $61, $6f, $6e ; left horizontal thing
+  .db $b2, $08, $fb, $1e ; top right topmost wall
+  .db $c2, $21, $fb, $3e ; top right middle wall
+  .db $e2, $41, $fb, $5e ; top right bottom wall
+  .db $d2, $b1, $fb, $fe ; bottom right corner wall
+  ; inner walls
+  .db $42, $31, $8f, $3e ; topmost thin horizontal wall thing
+  .db $92, $31, $9f, $5e ; vertical thing connecting to that
+  .db $92, $61, $af, $be ; left side of right chunk
+  .db $b2, $61, $bf, $8e ; right chunk part 2: electric boogaloo
+  .db $c2, $71, $cf, $8e ; right chunk part 3
+  .db $42, $91, $7f, $ae ; top part of left chunk
+  .db $32, $b1, $86, $be ; bottom part AND THE 2 CONNECTED BARRELS
+  ; barrels (why did I add these omg)
+  .db $82, $91, $86, $96
+  .db $8b, $a1, $91, $a6
+  .db $7b, $c1, $7e, $ce
+
 trackwalloffsets:
   .db LOW(track1walls), HIGH(track1walls)
   .db LOW(track2walls), HIGH(track2walls)
   .db LOW(track3walls), HIGH(track3walls)
+  .db LOW(track4walls), HIGH(track4walls)
 
 trackwallcounts:
-  ; track1, track2, track3
-  .db $07, $0c, $0b
+  ; track1, track2, track3, etc.
+  .db $07, $0c, $0b, $10
 
 tracklabels:
   ;   timer high, timer low, lap high, lap low, countdown high, cdown low
   .db $23, $21, $23, $61, $21, $d0 ; track 1
   .db $23, $23, $23, $63, $23, $48 ; track 2
   .db $20, $97, $20, $d7, $21, $32 ; track 3
+  .db $20, $7a, $20, $ba, $21, $d4 ; track 4
 
 trackfinishlinex:
-  ; track1, track2, track 3
-  .db $92, $7f, $b8
+  ; track1, track2, track 3, etc.
+  .db $92, $7f, $b8, $76
 
 trackfinishliney:
   .db $bd, $df ; track 1 top,bot
   .db $0d, $2f ; track 2 top,bot
   .db $6d, $8f ; track 3 top,bot
+  .db $0d, $2f ; track 4 top,bot
 
 trackplayerstarts:
   .db $80, $ca ; track 1 x,y
   .db $70, $15 ; track 2 x,y
   .db $a8, $76 ; track 3 x,y
+  .db $66, $1b ; track 4 x,y
 
   .org $FFFA
   .dw NMI ; label to jump to on nmi
