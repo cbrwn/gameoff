@@ -265,7 +265,7 @@ trackwallcounts:
 tracklabels:
   ;   timer high, timer low, lap high, lap low, countdown high, cdown low
   .db $23, $21, $23, $61, $21, $d0 ; track 1
-  .db $23, $21, $23, $61, $23, $48 ; track 2
+  .db $23, $23, $23, $63, $23, $48 ; track 2
 
 trackfinishlinex:
   ; track1, track2
