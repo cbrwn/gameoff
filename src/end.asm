@@ -21,7 +21,7 @@ startendstate:
 doendstate:
   jsr enablenmi
   lda buttons
-  and #%00100000
+  and #%00010000
   beq desnostart
   jsr startmenustate
 desnostart:

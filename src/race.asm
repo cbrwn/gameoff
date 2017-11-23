@@ -7,15 +7,6 @@ SPRITECARBASE  = $08 ; start of car sprites
 CARSPRITE      = $0200
 FINISHLINEX    = $92
 
-WALLBOXCOUNT   = $07 ; number of boxes which act as walls
-
-TIMERTILEHIGH  = $23
-TIMERTILELOW   = $21
-LAPTILEHIGH    = $23
-LAPTILELOW     = $61
-CDOWNTILEHIGH  = $21
-CDOWNTILELOW   = $d0
-
 playerx        .rs 1
 playery        .rs 1
 rotationindex  .rs 1
@@ -32,6 +23,13 @@ colframes      .rs 1 ; how many frames in a row are we inside something
 noclplayerx    .rs 1 ; last x pos where we didn't collide
 noclplayery    .rs 1 ; last y pos where we didn't collide
 
+timertilehigh  .rs 1
+timertilelow   .rs 1
+laptilehigh    .rs 1
+laptilelow     .rs 1
+cdowntilehigh  .rs 1
+cdowntilelow   .rs 1
+
 currentlap     .rs 1
 maxlap         .rs 1
 lapflag        .rs 1
@@ -44,6 +42,16 @@ timer1         .rs 1
 timer10        .rs 1
 timer100       .rs 1
 
+; addresses to load track-specific stuff
+trackbgloadlow    .rs 1 ; background address low byte
+trackbgloadhigh   .rs 1 ; and high byte
+trackwallloadlow  .rs 1 ; walls address low byte
+trackwallloadhigh .rs 1 ; and high byte
+trackwallcount    .rs 1 ; number of boxes
+finishlinex       .rs 1
+finishlineytop    .rs 1
+finishlineybot    .rs 1
+
 ; switch to game state here
 startgamestate:
   jsr disablenmi
@@ -55,10 +63,6 @@ startgamestate:
   jsr enablesound
 
   ; initialize variables and stuff
-  lda #$80
-  sta playerx
-  lda #$ca
-  sta playery
   lda #$02
   sta rotationindex
   jsr updaterotationfromindex
@@ -122,6 +126,7 @@ gsrace:
 
   jsr fixstuckinwall
   jsr lapcheck
+  jsr checkformenubutton
   jmp nmiend
 
 docountdown:
@@ -227,6 +232,14 @@ aplend:
 aplafterreverse:
   rts
 
+checkformenubutton:
+  lda buttons
+  and #%00100000
+  beq menubuttonend
+  jsr startmenustate
+menubuttonend:
+  rts
+
 moveplayerforward:
   ; honestly this is all awful and not worth commenting I just wanted the driving to work
   cpx #$00
@@ -305,55 +318,55 @@ clpend:
   rts
 
 collidewalls
-  ldy #$00
+  ldx #$00
 clwloop:
   jsr roundxupwalls
   ; check left side
   lda playerx
   clc
   adc #PLAYERWIDTH
-  cmp walls,x
+  cmp [trackwallloadlow],y
   bcc clwloopend
   ; check top side
-  inx
+  iny
   lda playery
   clc
   adc #PLAYERHEIGHT
-  cmp walls,x
+  cmp [trackwallloadlow],y
   bcc clwloopend
   ; check right side
-  inx
+  iny
   lda playerx
-  cmp walls,x
+  cmp [trackwallloadlow],y
   bcs clwloopend
   ; check bottom side
-  inx
+  iny
   lda playery
-  cmp walls,x
+  cmp [trackwallloadlow],y
   bcs clwloopend
   ; WE'VE COLLIDED!
   jsr updatemovedirections
   jsr playercollided
   rts ; we can leave this routine
 clwloopend:
-  iny
-  cpy #WALLBOXCOUNT
+  inx
+  cpx trackwallcount
   bne clwloop
   jsr updatemovedirections
   ; wow collision done
   rts
 
-; supposed to make x = y*4
+; supposed to make y = x*4
 roundxupwalls:
-  ldx #$00
-  cpy #$00
+  ldy #$00
+  cpx #$00
   beq rxuwend
-  tya
+  txa
 rxuwloop:
-  inx
-  inx
-  inx
-  inx
+  iny
+  iny
+  iny
+  iny
   sec
   sbc #$01
   cmp #$00
@@ -422,21 +435,21 @@ fswend:
 lapcheck:
   ; check we're in the finish line vertically
   lda playery
-  cmp #$bd
+  cmp finishlineytop
   bcc lpcend
   ; >= $bd
   lda playery ; not sure if I need to load this again
-  cmp #$df
+  cmp finishlineybot
   bcs lpcend
   ; we are within the lap line vertically
   ; now to check if we passed the finish line
   lda framebeforex
-  cmp #FINISHLINEX
+  cmp finishlinex
   bcs lpcwasright
 lpcwasleft:
   ; car was left of the finish line before this frame
   lda playerx
-  cmp #FINISHLINEX
+  cmp finishlinex
   bcc lpcend ; no crossage
   ; crossed it the correct direction
   lda lapflag
@@ -450,7 +463,7 @@ lpcleftend:
 lpcwasright:
   ; car was right of the finish line before this frame
   lda playerx
-  cmp #FINISHLINEX
+  cmp finishlinex
   bcs lpcend ; no crossage
   ; crossed, but the wrong direction
   lda #$00
@@ -663,9 +676,9 @@ inctend:
 
 updatetimerlabel:
   lda $2002 ; start listening for an address
-  lda #TIMERTILEHIGH
+  lda timertilehigh
   sta $2006
-  lda #TIMERTILELOW
+  lda timertilelow
   sta $2006
   lda #$0d ; clock icon
   sta $2007
@@ -681,9 +694,9 @@ updatetimerlabel:
 
 updatelaplabel:
   lda $2002 ; start listening for an address
-  lda #LAPTILEHIGH
+  lda laptilehigh
   sta $2006
-  lda #LAPTILELOW
+  lda laptilelow
   sta $2006
   lda #$0f ; flag icon
   sta $2007
@@ -699,9 +712,9 @@ updatelaplabel:
 
 updatecountdownlabel:
   lda $2002
-  lda #CDOWNTILEHIGH
+  lda cdowntilehigh
   sta $2006
-  lda #CDOWNTILELOW
+  lda cdowntilelow
   sta $2006
   lda countdown
   bne ucdlend
@@ -716,10 +729,10 @@ ucdlend:
 loadgamestuff:
   ; load background
   ; load pointer values
-  lda #LOW(background)
-  sta playerx
-  lda #HIGH(background)
-  sta playery ; use playerx and y as the pointer instead of having its own variable
+  lda trackbgloadlow;#LOW(track1background)
+  sta timermils
+  lda trackbgloadhigh;#HIGH(track1background)
+  sta timer1 ; use timer stuff as the pointer instead of having its own variable
   lda $2002
   lda #$20
   sta $2006
@@ -729,7 +742,7 @@ loadgamestuff:
   ldy #$00
 loadgamebgl1: ; load game background loop 1
 loadgamebgl2: ; and 2
-  lda [playerx], y
+  lda [timermils], y
   sta $2007
 
   iny ; loop2
@@ -737,7 +750,7 @@ loadgamebgl2: ; and 2
   bne loadgamebgl2 ; keep going til y wraps around to 0
   
   ; gone through 256 times
-  inc playery ; so we bump up the high byte
+  inc timer1 ; so we bump up the high byte
   inx
   cpx #$04
   bne loadgamebgl1

@@ -2,7 +2,7 @@
 
 DIFFICULTYCOUNT  = $03
 LAPSELECTCOUNT   = $03
-TRACKSELECTCOUNT = $09
+TRACKSELECTCOUNT = $02
 
 SELECTIONTILEHIGH = $22
 DIFFICULTYSTRINGLENGTH = $06
@@ -30,6 +30,7 @@ diftexthigh = $08
 startmenustate:
   jsr disablenmi
 
+  jsr clearsprites
   jsr loadmenustuff
 
   lda #STATE_MENU
@@ -68,7 +69,7 @@ domenustate:
   lda wasbuttondwn
   bne nostartgame
   lda buttons
-  and #%00100000
+  and #%00010000
   beq nostartgame
   jmp startgame
 nostartgame:
@@ -86,9 +87,117 @@ startgame:
   ldx diffselectindex
   lda speedselections, x
   sta drivespeed
-  ; HASN'T BEEN TESTED IDK WHAT I'VE DONE OK SEE U LATER LMAO
+
+  ; set label positions
+  lda #LOW(tracklabels)
+  sta diftextlow
+  lda #HIGH(tracklabels)
+  sta diftexthigh
+  jsr setyforlabelsetup
+  jsr loadlabelpositions
+
+  ; set background address locations
+  lda #LOW(trackbgoffsets)
+  sta diftextlow
+  lda #HIGH(trackbgoffsets)
+  sta diftexthigh
+  jsr setyforbackgroundsetup
+  jsr loadbackgroundaddresses
+
+  ; set wall address locations
+  lda #LOW(trackwalloffsets)
+  sta diftextlow
+  lda #HIGH(trackwalloffsets)
+  sta diftexthigh
+  jsr setyforbackgroundsetup
+  jsr loadwalladdresses
+
+  ; set number of walls
+  lda #LOW(trackwallcounts)
+  sta diftextlow
+  lda #HIGH(trackwallcounts)
+  sta diftexthigh
+  ldy trackselectindex
+  lda [diftextlow], y
+  sta trackwallcount
+
+  ; set finish line x position
+  ldx trackselectindex
+  lda trackfinishlinex, x
+  sta finishlinex
+
+  ; set finish line y positions
+  lda #LOW(trackfinishliney)
+  sta diftextlow
+  lda #HIGH(trackfinishliney)
+  sta diftexthigh
+  jsr setyforbackgroundsetup
+  jsr loadfinishlinepositions
+
+  ; set player position
+  lda #LOW(trackplayerstarts)
+  sta diftextlow
+  lda #HIGH(trackplayerstarts)
+  sta diftexthigh
+  jsr setyforbackgroundsetup
+  jsr loadplayerstarts
+
   jsr startgamestate
   jmp nmiend
+
+loadlabelpositions:
+  ; assume diftextlow and diftexthigh are set to the
+  ; label of the text positions and y is set to the first value
+  lda [diftextlow], y
+  sta timertilehigh
+  iny
+  lda [diftextlow], y
+  sta timertilelow
+  iny
+  lda [diftextlow], y
+  sta laptilehigh
+  iny
+  lda [diftextlow], y
+  sta laptilelow
+  iny
+  lda [diftextlow], y
+  sta cdowntilehigh
+  iny
+  lda [diftextlow], y
+  sta cdowntilelow
+  rts
+
+loadbackgroundaddresses:
+  lda [diftextlow], y
+  sta trackbgloadlow
+  iny
+  lda [diftextlow], y
+  sta trackbgloadhigh
+  rts
+
+loadwalladdresses:
+  lda [diftextlow], y
+  sta trackwallloadlow
+  iny
+  lda [diftextlow], y
+  sta trackwallloadhigh
+  rts
+
+loadfinishlinepositions:
+  lda [diftextlow], y
+  sta finishlineytop
+  iny
+  lda [diftextlow], y
+  sta finishlineybot
+  rts
+
+loadplayerstarts:
+  lda [diftextlow], y
+  sta playerx
+  iny
+  lda [diftextlow], y
+  sta playery
+  rts
 
 menuactions:
   lda wasbuttondwn
@@ -192,6 +301,61 @@ bpcnopressed:
 bpcend:
   rts
 
+; do this simply now but it can be made a lot nicer
+setdifficultyeasy:
+  lda #HIGH(difstringeasy)
+  sta diftexthigh
+  lda #LOW(difstringeasy)
+  sta diftextlow
+  jmp diflabeladdressset
+
+setdifficultymedium:
+  lda #HIGH(difstringmedium)
+  sta diftexthigh
+  lda #LOW(difstringmedium)
+  sta diftextlow
+  jmp diflabeladdressset
+
+setdifficultyhard:
+  lda #HIGH(difstringhard)
+  sta diftexthigh
+  lda #LOW(difstringhard)
+  sta diftextlow
+  jmp diflabeladdressset
+
+; sets y to trackindex * 6
+setyforlabelsetup:
+  ldy #$00
+  ldx trackselectindex
+  jmp ylabelendofloop
+ylabelsetuploop:
+  iny
+  iny
+  iny
+  iny
+  iny
+  iny
+  dex
+ylabelendofloop:
+  cpx #$00
+  bne ylabelsetuploop
+  rts
+
+; sets y to trackindex * 2
+setyforbackgroundsetup:
+  ldy #$00
+  ldx trackselectindex
+  jmp ybgsendofloop
+ybgsetuploop:
+  iny
+  iny
+  dex
+ybgsendofloop:
+  cpx #$00
+  bne ybgsetuploop
+  rts
+
+
 updatedifficultylabel:
   lda diffselectindex
   beq setdifficultyeasy
@@ -219,29 +383,6 @@ diflabelloop:
   cpy #DIFFICULTYSTRINGLENGTH
   bne diflabelloop
   rts
-
-; do this simply now but it can be made a lot nicer
-setdifficultyeasy:
-  lda #HIGH(difstringeasy)
-  sta diftexthigh
-  lda #LOW(difstringeasy)
-  sta diftextlow
-  jmp diflabeladdressset
-
-setdifficultymedium:
-  lda #HIGH(difstringmedium)
-  sta diftexthigh
-  lda #LOW(difstringmedium)
-  sta diftextlow
-  jmp diflabeladdressset
-
-setdifficultyhard:
-  lda #HIGH(difstringhard)
-  sta diftexthigh
-  lda #LOW(difstringhard)
-  sta diftextlow
-  jmp diflabeladdressset
-
 
 updateselectindicator:
   ldx #$00

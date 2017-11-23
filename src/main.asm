@@ -200,9 +200,6 @@ difstringhard:
   .db $18,$11,$22,$14,$fa,$fa
 
 ; background stuff
-background:
-  .incbin "racetrack1.bin"
-
 introscreen:
   .incbin "introscreen.bin"
 
@@ -219,7 +216,21 @@ directions:
   ;    U   UR  R  RD   D  LD  L    LU
   .db $02,$0a,$08,$09,$01,$05,$04,$06
 
-walls:
+; track stuff
+
+; track backgrounds
+track1background:
+  .incbin "racetrack1.bin"
+
+track2background:
+  .incbin "racetrack2.bin"
+
+trackbgoffsets:
+  .db LOW(track1background), HIGH(track1background)
+  .db LOW(track2background), HIGH(track2background)
+
+; track walls
+track1walls:
   ; left, top, right, bottom
   .db $31, $30, $90, $7f
   .db $61, $65, $a0, $be
@@ -228,6 +239,45 @@ walls:
   .db $0a, $a0, $40, $e7
   .db $c1, $8f, $f0, $9f
   .db $b1, $01, $f0, $2f
+
+track2walls:
+  .db $32, $31, $3f, $8e
+  .db $32, $31, $bf, $3e
+  .db $b2, $41, $cf, $7e
+  .db $b2, $31, $bf, $9e
+  .db $92, $91, $bf, $9e
+  .db $92, $91, $af, $be
+  .db $62, $61, $8f, $6e
+  .db $62, $61, $6f, $de
+  .db $00, $b1, $6f, $de
+  .db $d2, $c1, $fb, $fb
+  .db $e2, $91, $fb, $fb
+  .db $d2, $00, $fb, $1e
+
+trackwalloffsets:
+  .db LOW(track1walls), HIGH(track1walls)
+  .db LOW(track2walls), HIGH(track2walls)
+
+trackwallcounts:
+  ; track1, track2
+  .db $07, $0c
+
+tracklabels:
+  ;   timer high, timer low, lap high, lap low, countdown high, cdown low
+  .db $23, $21, $23, $61, $21, $d0 ; track 1
+  .db $23, $21, $23, $61, $23, $48 ; track 2
+
+trackfinishlinex:
+  ; track1, track2
+  .db $92, $7f
+
+trackfinishliney:
+  .db $bd, $df ; track 1 top,bot
+  .db $0d, $2f ; track 2 top,bot
+
+trackplayerstarts:
+  .db $80, $ca ; track 1 x,y
+  .db $70, $15 ; track 2 x,y
 
   .org $FFFA
   .dw NMI ; label to jump to on nmi
