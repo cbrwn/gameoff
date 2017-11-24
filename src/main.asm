@@ -294,7 +294,6 @@ track4walls:
   ; barrels (why did I add these omg)
   .db $82, $91, $86, $96
   .db $8b, $a1, $91, $a6
-  .db $7b, $c1, $7e, $ce
 
 trackwalloffsets:
   .db LOW(track1walls), HIGH(track1walls)
