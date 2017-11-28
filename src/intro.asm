@@ -19,10 +19,11 @@ dointrostate:
   jsr enablenmi
   lda introtimer
   clc
-  adc #$01
+  adc #$02
   sta introtimer
-  cmp #$ff ; wait 255 frames
-  bne disnochange
+  sta $0203
+  cmp #$f9 ; wait 255 frames
+  bcc disnochange
   jsr startmenustate
 disnochange:
   jmp nmiend
@@ -52,4 +53,13 @@ loadintrobgl2:
   inx
   cpx #$04
   bne loadintrobgl1
+  ; load the car sprite to move across the screen
+  lda #$2a
+  sta $0200
+  lda #$09
+  sta $0201
+  lda #%01000001 ; flip horizontally
+  sta $0202
+  lda #$00
+  sta $0203
   rts

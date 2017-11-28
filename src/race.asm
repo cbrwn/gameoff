@@ -344,7 +344,7 @@ clwloop:
   lda playery
   cmp [trackwallloadlow],y
   bcs clwloopend
-  ; WE'VE COLLIDED!
+  ; WE'VE COLLIDED
   jsr updatemovedirections
   jsr playercollided
   rts ; we can leave this routine
